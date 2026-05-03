@@ -640,6 +640,91 @@ document.getElementById('exportPDF').addEventListener('click', exportPDF);
 // Today date
 document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
 
+// ===================== ONBOARDING =====================
+function initOnboarding() {
+  const done = localStorage.getItem('ft_onboarded');
+  if (done) return;
+  document.getElementById('onboarding').classList.add('open');
+}
+
+function goToStep(n) {
+  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
+  document.getElementById(`ob-step-${n}`).classList.add('active');
+  document.querySelectorAll('.ob-dot').forEach((d,i) => d.classList.toggle('active', i < n));
+}
+
+document.querySelectorAll('.ob-next').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const next = parseInt(btn.dataset.next);
+    if (next === 3) {
+      const name = document.getElementById('ob-name').value.trim() || 'User';
+      localStorage.setItem('ft_username', name);
+      document.querySelector('.user-name').textContent = name;
+      document.querySelector('.user-avatar').textContent = name.slice(0,2).toUpperCase();
+    }
+    goToStep(next);
+  });
+});
+
+document.querySelector('.ob-skip')?.addEventListener('click', () => goToStep(4));
+
+document.getElementById('ob-finish').addEventListener('click', () => {
+  const budget = document.getElementById('ob-budget').value;
+  if (budget && parseFloat(budget) > 0) {
+    // Save as overall budget hint in localStorage
+    localStorage.setItem('ft_monthly_goal', budget);
+  }
+  localStorage.setItem('ft_onboarded', '1');
+  document.getElementById('onboarding').classList.remove('open');
+  launchConfetti();
+  toast(`Welcome to FinTrack! Press N to add your first expense. 🚀`);
+});
+
+// ===================== KEYBOARD SHORTCUTS =====================
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  const typing = ['INPUT','TEXTAREA','SELECT'].includes(tag);
+  const anyModalOpen = document.querySelector('.modal-overlay.open, .shortcuts-overlay.open');
+
+  // ESC - close any open modal
+  if (e.key === 'Escape') {
+    closeModal();
+    closeRecurringModal();
+    closeBudgetModal();
+    document.getElementById('shortcutsModal').classList.remove('open');
+    return;
+  }
+
+  if (typing) return;
+
+  const pages = { '1':'dashboard','2':'expenses','3':'recurring','4':'analytics','5':'budget' };
+  if (pages[e.key]) {
+    document.querySelector(`.nav-link[data-page="${pages[e.key]}"]`)?.click();
+    return;
+  }
+
+  switch(e.key.toLowerCase()) {
+    case 'n': openModal(); break;
+    case 'd': document.getElementById('themeToggle').click(); break;
+    case '?': document.getElementById('shortcutsModal').classList.toggle('open'); break;
+  }
+});
+
+document.getElementById('openShortcuts').addEventListener('click', () => document.getElementById('shortcutsModal').classList.add('open'));
+document.getElementById('closeShortcuts').addEventListener('click', () => document.getElementById('shortcutsModal').classList.remove('open'));
+document.getElementById('shortcutsModal').addEventListener('click', e => { if (e.target.id === 'shortcutsModal') document.getElementById('shortcutsModal').classList.remove('open'); });
+
+// ===================== RESTORE USERNAME =====================
+function restoreUser() {
+  const name = localStorage.getItem('ft_username');
+  if (name) {
+    document.querySelector('.user-name').textContent = name;
+    document.querySelector('.user-avatar').textContent = name.slice(0,2).toUpperCase();
+  }
+}
+
 // Init
 initTheme();
+restoreUser();
 load();
+initOnboarding();
