@@ -4,6 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FinTrack — Smart Expense Tracker</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#6c63ff" id="theme-color-meta"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="FinTrack"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+  <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png"/>
+  <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96.png"/>
   <link rel="stylesheet" href="css/style.css"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
@@ -493,6 +504,21 @@
 
   <!-- Floating shortcut hint -->
   <button class="shortcut-fab" id="openShortcuts" title="Keyboard Shortcuts (?)">⌨️</button>
+
+  <!-- PWA Install Banner -->
+  <div class="pwa-banner" id="pwa-banner">
+    <div class="pwa-banner-left">
+      <img src="/icons/icon-72.png" width="40" height="40" style="border-radius:10px"/>
+      <div>
+        <div class="pwa-banner-title">Install FinTrack</div>
+        <div class="pwa-banner-sub">Add to home screen for app experience</div>
+      </div>
+    </div>
+    <div class="pwa-banner-actions">
+      <button class="pwa-install-btn" id="pwa-install">Install</button>
+      <button class="pwa-dismiss-btn" id="pwa-dismiss">✕</button>
+    </div>
+  </div>
 
   <script src="js/app.js"></script>
 </body>

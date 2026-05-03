@@ -845,6 +845,45 @@ function restoreUser() {
   }
 }
 
+// ===================== PWA =====================
+let deferredPrompt = null;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('SW registered'))
+      .catch(err => console.log('SW error:', err));
+  });
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const banner = document.getElementById('pwa-banner');
+  if (!localStorage.getItem('pwa-dismissed')) {
+    setTimeout(() => banner.classList.add('show'), 2000);
+  }
+});
+
+document.getElementById('pwa-install')?.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') toast('FinTrack installed! 🎉');
+  deferredPrompt = null;
+  document.getElementById('pwa-banner').classList.remove('show');
+});
+
+document.getElementById('pwa-dismiss')?.addEventListener('click', () => {
+  document.getElementById('pwa-banner').classList.remove('show');
+  localStorage.setItem('pwa-dismissed', '1');
+});
+
+window.addEventListener('appinstalled', () => {
+  toast('FinTrack installed successfully! 🚀', 'success');
+  document.getElementById('pwa-banner').classList.remove('show');
+});
+
 // Init
 initTheme();
 restoreUser();
