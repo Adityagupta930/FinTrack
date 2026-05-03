@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,7 +34,7 @@ app.post('/api/expenses', (req, res) => {
   if (!title || !amount || !category || !date) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
-  const expense = { id: uuidv4(), title, amount: parseFloat(amount), category, date, note: note || '', createdAt: new Date().toISOString() };
+  const expense = { id: crypto.randomUUID(), title, amount: parseFloat(amount), category, date, note: note || '', createdAt: new Date().toISOString() };
   const data = readData();
   data.unshift(expense);
   writeData(data);
