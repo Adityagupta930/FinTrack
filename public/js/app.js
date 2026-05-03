@@ -853,3 +853,8 @@ initOnboarding();
 initReceiptPreview();
 initQuickAdd();
 initBottomNav();
+initParticles();
+initRipple();
+initContextMenu();
+initFormatToggle();
+initPageTransitions();
