@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -9,8 +9,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+
+  <!-- Toast -->
+  <div id="toast-container"></div>
 
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
@@ -31,13 +36,25 @@
         <div class="nav-icon"><i class="fa-solid fa-wallet"></i></div>
         <span>Expenses</span>
       </a>
+      <a href="#" class="nav-link" data-page="recurring">
+        <div class="nav-icon"><i class="fa-solid fa-rotate"></i></div>
+        <span>Recurring</span>
+      </a>
       <a href="#" class="nav-link" data-page="analytics">
         <div class="nav-icon"><i class="fa-solid fa-chart-line"></i></div>
         <span>Analytics</span>
       </a>
+      <a href="#" class="nav-link" data-page="budget">
+        <div class="nav-icon"><i class="fa-solid fa-bullseye"></i></div>
+        <span>Budget</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
+      <button class="theme-toggle" id="themeToggle">
+        <i class="fa-solid fa-moon" id="themeIcon"></i>
+        <span id="themeLabel">Dark Mode</span>
+      </button>
       <div class="user-badge">
         <div class="user-avatar">FT</div>
         <div class="user-info">
@@ -48,10 +65,8 @@
     </div>
   </aside>
 
-  <!-- Main Content -->
+  <!-- Main -->
   <main class="main" id="main">
-
-    <!-- Topbar -->
     <header class="topbar">
       <div class="topbar-left">
         <h1 id="page-title">Dashboard</h1>
@@ -59,19 +74,14 @@
       </div>
       <div class="topbar-right">
         <div class="date-badge"><i class="fa-regular fa-calendar"></i> <span id="today-date"></span></div>
-        <button class="btn-add" id="openModal">
-          <i class="fa-solid fa-plus"></i> Add Expense
-        </button>
+        <button class="btn-add" id="openModal"><i class="fa-solid fa-plus"></i> Add Expense</button>
       </div>
     </header>
 
     <!-- Dashboard -->
     <section id="page-dashboard" class="page active">
-
-      <!-- Stat Cards -->
       <div class="cards">
         <div class="card card-1">
-          <div class="card-bg"></div>
           <div class="card-content">
             <div class="card-label">Total Spent</div>
             <div class="card-value" id="total-spent">₹0</div>
@@ -80,7 +90,6 @@
           <div class="card-icon-wrap"><i class="fa-solid fa-indian-rupee-sign"></i></div>
         </div>
         <div class="card card-2">
-          <div class="card-bg"></div>
           <div class="card-content">
             <div class="card-label">This Month</div>
             <div class="card-value" id="month-spent">₹0</div>
@@ -89,7 +98,6 @@
           <div class="card-icon-wrap"><i class="fa-solid fa-calendar-days"></i></div>
         </div>
         <div class="card card-3">
-          <div class="card-bg"></div>
           <div class="card-content">
             <div class="card-label">Transactions</div>
             <div class="card-value" id="total-count">0</div>
@@ -98,7 +106,6 @@
           <div class="card-icon-wrap"><i class="fa-solid fa-receipt"></i></div>
         </div>
         <div class="card card-4">
-          <div class="card-bg"></div>
           <div class="card-content">
             <div class="card-label">Top Category</div>
             <div class="card-value" id="top-category" style="font-size:18px">—</div>
@@ -108,9 +115,8 @@
         </div>
       </div>
 
-      <!-- Charts -->
       <div class="charts-row">
-        <div class="glass-box chart-wide">
+        <div class="glass-box">
           <div class="box-header">
             <span class="box-title">Monthly Spending</span>
             <span class="box-badge">Last 6 months</span>
@@ -118,14 +124,11 @@
           <canvas id="barChart"></canvas>
         </div>
         <div class="glass-box">
-          <div class="box-header">
-            <span class="box-title">By Category</span>
-          </div>
+          <div class="box-header"><span class="box-title">By Category</span></div>
           <canvas id="pieChart"></canvas>
         </div>
       </div>
 
-      <!-- Recent -->
       <div class="glass-box">
         <div class="box-header">
           <span class="box-title">Recent Transactions</span>
@@ -133,7 +136,6 @@
         </div>
         <div id="recent-list"></div>
       </div>
-
     </section>
 
     <!-- Expenses -->
@@ -154,12 +156,31 @@
           <option value="Bills">💡 Bills</option>
           <option value="Other">📦 Other</option>
         </select>
-        <select id="filter-month">
-          <option value="">All Months</option>
-        </select>
+        <select id="filter-month"><option value="">All Months</option></select>
+        <div class="date-range-wrap">
+          <input type="date" id="date-from" title="From date"/>
+          <span style="color:var(--text3);font-size:12px">to</span>
+          <input type="date" id="date-to" title="To date"/>
+        </div>
+        <div class="export-btns">
+          <button class="btn-export" id="exportCSV"><i class="fa-solid fa-file-csv"></i> CSV</button>
+          <button class="btn-export" id="exportPDF"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+        </div>
       </div>
       <div class="glass-box" style="margin-top:16px">
         <div id="expenses-list"></div>
+      </div>
+    </section>
+
+    <!-- Recurring -->
+    <section id="page-recurring" class="page">
+      <div class="glass-box" style="margin-bottom:16px">
+        <div class="box-header">
+          <span class="box-title">Recurring Expenses</span>
+          <button class="btn-add" id="openRecurringModal"><i class="fa-solid fa-plus"></i> Add Recurring</button>
+        </div>
+        <p style="font-size:13px;color:var(--text3);margin-bottom:16px">These expenses auto-add every month on the set date.</p>
+        <div id="recurring-list"></div>
       </div>
     </section>
 
@@ -184,9 +205,20 @@
       </div>
     </section>
 
+    <!-- Budget -->
+    <section id="page-budget" class="page">
+      <div class="glass-box">
+        <div class="box-header">
+          <span class="box-title">Monthly Budgets</span>
+          <button class="btn-add" id="openBudgetModal"><i class="fa-solid fa-plus"></i> Set Budget</button>
+        </div>
+        <p style="font-size:13px;color:var(--text3);margin-bottom:20px">Set spending limits per category. Get alerted when you exceed them.</p>
+        <div id="budget-list"></div>
+      </div>
+    </section>
   </main>
 
-  <!-- Modal -->
+  <!-- Add Expense Modal -->
   <div class="modal-overlay" id="modal">
     <div class="modal">
       <div class="modal-header">
@@ -198,12 +230,10 @@
       </div>
       <form id="expense-form">
         <input type="hidden" id="expense-id"/>
-
         <div class="form-group">
           <label>Title</label>
           <input type="text" id="f-title" placeholder="e.g. Lunch, Uber ride..." required/>
         </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Amount (₹)</label>
@@ -217,10 +247,9 @@
             <input type="date" id="f-date" required/>
           </div>
         </div>
-
         <div class="form-group">
           <label>Category</label>
-          <div class="cat-grid" id="cat-grid">
+          <div class="cat-grid">
             <div class="cat-chip" data-val="Food">🍔 Food</div>
             <div class="cat-chip" data-val="Transport">🚗 Transport</div>
             <div class="cat-chip" data-val="Shopping">🛍️ Shopping</div>
@@ -230,17 +259,110 @@
             <div class="cat-chip" data-val="Bills">💡 Bills</div>
             <div class="cat-chip" data-val="Other">📦 Other</div>
           </div>
-          <input type="hidden" id="f-category" required/>
+          <input type="hidden" id="f-category"/>
         </div>
-
         <div class="form-group">
           <label>Note <span style="color:var(--text3)">(optional)</span></label>
           <textarea id="f-note" placeholder="Add a note..."></textarea>
         </div>
-
         <div class="form-actions">
           <button type="button" class="btn-cancel" id="cancelModal">Cancel</button>
           <button type="submit" class="btn-save"><i class="fa-solid fa-check"></i> Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Recurring Modal -->
+  <div class="modal-overlay" id="recurringModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Add Recurring Expense</h2>
+          <p style="font-size:13px;color:var(--text3);margin-top:2px">Auto-adds every month</p>
+        </div>
+        <button class="close-btn" id="closeRecurringModal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="recurring-form">
+        <input type="hidden" id="r-id"/>
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="r-title" placeholder="e.g. Netflix, Rent..." required/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount (₹)</label>
+            <div class="input-prefix">
+              <span>₹</span>
+              <input type="number" id="r-amount" placeholder="0.00" min="0" step="0.01" required/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Day of Month</label>
+            <input type="number" id="r-day" placeholder="e.g. 1" min="1" max="28" required/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <div class="cat-grid" id="r-cat-grid">
+            <div class="cat-chip r-chip" data-val="Food">🍔 Food</div>
+            <div class="cat-chip r-chip" data-val="Transport">🚗 Transport</div>
+            <div class="cat-chip r-chip" data-val="Shopping">🛍️ Shopping</div>
+            <div class="cat-chip r-chip" data-val="Entertainment">🎬 Entertainment</div>
+            <div class="cat-chip r-chip" data-val="Health">💊 Health</div>
+            <div class="cat-chip r-chip" data-val="Education">📚 Education</div>
+            <div class="cat-chip r-chip" data-val="Bills">💡 Bills</div>
+            <div class="cat-chip r-chip" data-val="Other">📦 Other</div>
+          </div>
+          <input type="hidden" id="r-category"/>
+        </div>
+        <div class="form-group">
+          <label>Note <span style="color:var(--text3)">(optional)</span></label>
+          <textarea id="r-note" placeholder="Add a note..."></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" id="cancelRecurringModal">Cancel</button>
+          <button type="submit" class="btn-save"><i class="fa-solid fa-check"></i> Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Budget Modal -->
+  <div class="modal-overlay" id="budgetModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2>Set Budget</h2>
+          <p style="font-size:13px;color:var(--text3);margin-top:2px">Monthly spending limit</p>
+        </div>
+        <button class="close-btn" id="closeBudgetModal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="budget-form">
+        <div class="form-group">
+          <label>Category</label>
+          <select id="b-category" required style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:11px 14px;border-radius:10px;font-size:14px;outline:none;font-family:'Inter',sans-serif;">
+            <option value="">Select category</option>
+            <option value="Food">🍔 Food</option>
+            <option value="Transport">🚗 Transport</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Entertainment">🎬 Entertainment</option>
+            <option value="Health">💊 Health</option>
+            <option value="Education">📚 Education</option>
+            <option value="Bills">💡 Bills</option>
+            <option value="Other">📦 Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Monthly Limit (₹)</label>
+          <div class="input-prefix">
+            <span>₹</span>
+            <input type="number" id="b-amount" placeholder="0.00" min="0" step="0.01" required/>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" id="cancelBudgetModal">Cancel</button>
+          <button type="submit" class="btn-save"><i class="fa-solid fa-check"></i> Save Budget</button>
         </div>
       </form>
     </div>
