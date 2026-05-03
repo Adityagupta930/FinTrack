@@ -7,8 +7,8 @@ const COLORS = ['#7c6ff7','#06d6a0','#fbbf24','#f72585','#ff6b6b','#a78bfa','#00
 const CHART_OPTS = {
   plugins: { legend: { display: false } },
   scales: {
-    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#606080', font: { family: 'Inter' } } },
-    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#606080', font: { family: 'Inter' } } }
+    x: { grid: { color: '#f3f4f6' }, ticks: { color: '#9ca3af', font: { family: 'Inter' } } },
+    y: { grid: { color: '#f3f4f6' }, ticks: { color: '#9ca3af', font: { family: 'Inter' } } }
   }
 };
 
@@ -112,7 +112,7 @@ function renderDashboard() {
   if (barChart) barChart.destroy();
   barChart = new Chart(document.getElementById('barChart'), {
     type: 'bar',
-    data: { labels, datasets: [{ data: barData, backgroundColor: 'rgba(124,111,247,0.7)', borderRadius: 8, borderSkipped: false }] },
+    data: { labels, datasets: [{ data: barData, backgroundColor: 'rgba(108,99,255,0.8)', hoverBackgroundColor: '#6c63ff', borderRadius: 8, borderSkipped: false }] },
     options: { ...CHART_OPTS, plugins: { legend: { display: false } } }
   });
 
@@ -120,8 +120,8 @@ function renderDashboard() {
   if (pieChart) pieChart.destroy();
   pieChart = new Chart(document.getElementById('pieChart'), {
     type: 'pie',
-    data: { labels: cats, datasets: [{ data: cats.map(c=>catTotals[c]), backgroundColor: COLORS, borderWidth: 0 }] },
-    options: { plugins: { legend: { labels: { color: '#a0a0c0', boxWidth: 10, font: { family: 'Inter', size: 12 } } } } }
+    data: { labels: cats, datasets: [{ data: cats.map(c=>catTotals[c]), backgroundColor: COLORS, borderWidth: 2, borderColor: '#fff' }] },
+    options: { plugins: { legend: { labels: { color: '#6b7280', boxWidth: 10, font: { family: 'Inter', size: 12 } } } } }
   });
 }
 
@@ -155,7 +155,7 @@ function renderAnalytics() {
   if (lineChart) lineChart.destroy();
   lineChart = new Chart(document.getElementById('lineChart'), {
     type: 'line',
-    data: { labels, datasets: [{ data: lineData, borderColor: '#7c6ff7', backgroundColor: 'rgba(124,111,247,0.08)', fill: true, tension: 0.4, pointBackgroundColor: '#7c6ff7', pointRadius: 5, pointHoverRadius: 7 }] },
+    data: { labels, datasets: [{ data: lineData, borderColor: '#6c63ff', backgroundColor: 'rgba(108,99,255,0.07)', fill: true, tension: 0.4, pointBackgroundColor: '#6c63ff', pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 7 }] },
     options: { ...CHART_OPTS, plugins: { legend: { display: false } } }
   });
 
@@ -165,8 +165,8 @@ function renderAnalytics() {
   if (doughnutChart) doughnutChart.destroy();
   doughnutChart = new Chart(document.getElementById('doughnutChart'), {
     type: 'doughnut',
-    data: { labels: cats, datasets: [{ data: cats.map(c=>catTotals[c]), backgroundColor: COLORS, borderWidth: 0 }] },
-    options: { cutout: '68%', plugins: { legend: { labels: { color: '#a0a0c0', boxWidth: 10, font: { family: 'Inter', size: 12 } } } } }
+    data: { labels: cats, datasets: [{ data: cats.map(c=>catTotals[c]), backgroundColor: COLORS, borderWidth: 2, borderColor: '#fff' }] },
+    options: { cutout: '68%', plugins: { legend: { labels: { color: '#6b7280', boxWidth: 10, font: { family: 'Inter', size: 12 } } } } }
   });
 
   const total = Object.values(catTotals).reduce((s,v)=>s+v,0);
