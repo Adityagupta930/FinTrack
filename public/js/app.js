@@ -304,6 +304,95 @@ function initSwipe(el) {
   });
 }
 
+// ===================== RECEIPT LIVE PREVIEW =====================
+function initReceiptPreview() {
+  ['f-title','f-amount','f-date','f-note'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateReceipt);
+  });
+  document.querySelectorAll('.cat-chip:not(.r-chip)').forEach(c => c.addEventListener('click', updateReceipt));
+}
+
+function updateReceipt() {
+  const title    = document.getElementById('f-title').value || '—';
+  const amount   = parseFloat(document.getElementById('f-amount').value) || 0;
+  const date     = document.getElementById('f-date').value;
+  const category = document.getElementById('f-category').value || 'No category';
+  const note     = document.getElementById('f-note').value;
+  document.getElementById('rp-title').textContent    = title;
+  document.getElementById('rp-amount').textContent   = fmt(amount);
+  document.getElementById('rp-category').textContent = `${ICONS[category]||''} ${category}`;
+  document.getElementById('rp-note').textContent     = note;
+  document.getElementById('rp-date').textContent     = date ? new Date(date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '';
+}
+
+// ===================== QUICK ADD =====================
+function initQuickAdd() {
+  document.getElementById('qa-submit').addEventListener('click', () => {
+    const title  = document.getElementById('qa-title').value.trim();
+    const amount = document.getElementById('qa-amount').value;
+    const cat    = document.getElementById('qa-category').value;
+    if (!title || !amount || !cat) { toast('Fill title, amount & category!', 'warning'); return; }
+    expenses.unshift({ id: crypto.randomUUID(), title, amount: parseFloat(amount), category: cat, date: new Date().toISOString().split('T')[0], note: '', createdAt: new Date().toISOString() });
+    persist(); render(); checkBudgetAlerts(); checkConfetti();
+    document.getElementById('qa-title').value = '';
+    document.getElementById('qa-amount').value = '';
+    document.getElementById('qa-category').value = '';
+    toast(`⚡ ${title} added!`);
+  });
+  document.getElementById('qa-amount').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('qa-submit').click(); });
+}
+
+// ===================== SEARCH HIGHLIGHT =====================
+function highlight(text, query) {
+  if (!query) return text;
+  const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return text.replace(re, '<mark>$1</mark>');
+}
+
+// ===================== DRAG & DROP =====================
+function initDragDrop(container) {
+  let dragging = null;
+  container.querySelectorAll('.swipe-item').forEach(item => {
+    item.setAttribute('draggable', true);
+    item.addEventListener('dragstart', () => { dragging = item; setTimeout(() => item.classList.add('dragging'), 0); });
+    item.addEventListener('dragend',   () => { item.classList.remove('dragging'); dragging = null; syncOrder(container); });
+    item.addEventListener('dragover',  e => {
+      e.preventDefault();
+      const after = getDragAfter(container, e.clientY);
+      if (after == null) container.appendChild(dragging);
+      else container.insertBefore(dragging, after);
+    });
+  });
+}
+
+function getDragAfter(container, y) {
+  return [...container.querySelectorAll('.swipe-item:not(.dragging)')].reduce((closest, child) => {
+    const offset = y - child.getBoundingClientRect().top - child.getBoundingClientRect().height / 2;
+    return offset < 0 && offset > closest.offset ? { offset, element: child } : closest;
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function syncOrder(container) {
+  const ids = [...container.querySelectorAll('.swipe-item')].map(el => el.dataset.id);
+  expenses = ids.map(id => expenses.find(e => e.id === id)).filter(Boolean).concat(expenses.filter(e => !ids.includes(e.id)));
+  persist();
+}
+
+// ===================== BOTTOM NAV =====================
+function initBottomNav() {
+  document.querySelectorAll('.bottom-nav-item[data-page]').forEach(item => {
+    item.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(`.nav-link[data-page="${item.dataset.page}"]`)?.click();
+    });
+  });
+  document.getElementById('bottomAddBtn')?.addEventListener('click', e => { e.preventDefault(); openModal(); });
+}
+
+function syncBottomNav(page) {
+  document.querySelectorAll('.bottom-nav-item[data-page]').forEach(i => i.classList.toggle('active', i.dataset.page === page));
+}
+
 function saveExpense(data) {
   const id = document.getElementById('expense-id').value;
   if (id) {
