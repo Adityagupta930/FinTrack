@@ -975,9 +975,6 @@ mark {
   z-index: 0;
   opacity: 0.4;
 }
-.sidebar, .main, .modal-overlay, .onboarding-overlay,
-.shortcuts-overlay, .bottom-nav, #toast-container,
-.shortcut-fab, .sidebar-backdrop { position: relative; z-index: 1; }
 
 /* ===== SKELETON LOADING ===== */
 .skeleton {
