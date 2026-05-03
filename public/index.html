@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FinTrack - Expense Tracker</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo"><i class="fa-solid fa-wallet"></i> FinTrack</div>
+    <nav>
+      <a href="#" class="nav-link active" data-page="dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+      <a href="#" class="nav-link" data-page="expenses"><i class="fa-solid fa-list"></i> Expenses</a>
+      <a href="#" class="nav-link" data-page="analytics"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <!-- Header -->
+    <header class="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <button class="btn-add" id="openModal"><i class="fa-solid fa-plus"></i> Add Expense</button>
+    </header>
+
+    <!-- Dashboard Page -->
+    <section id="page-dashboard" class="page active">
+      <div class="cards">
+        <div class="card card-total">
+          <div class="card-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+          <div>
+            <p>Total Spent</p>
+            <h2 id="total-spent">₹0</h2>
+          </div>
+        </div>
+        <div class="card card-month">
+          <div class="card-icon"><i class="fa-solid fa-calendar"></i></div>
+          <div>
+            <p>This Month</p>
+            <h2 id="month-spent">₹0</h2>
+          </div>
+        </div>
+        <div class="card card-count">
+          <div class="card-icon"><i class="fa-solid fa-receipt"></i></div>
+          <div>
+            <p>Transactions</p>
+            <h2 id="total-count">0</h2>
+          </div>
+        </div>
+        <div class="card card-top">
+          <div class="card-icon"><i class="fa-solid fa-fire"></i></div>
+          <div>
+            <p>Top Category</p>
+            <h2 id="top-category">-</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-box">
+          <h3>Monthly Spending</h3>
+          <canvas id="barChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>By Category</h3>
+          <canvas id="pieChart"></canvas>
+        </div>
+      </div>
+
+      <div class="recent-box">
+        <h3>Recent Expenses</h3>
+        <div id="recent-list"></div>
+      </div>
+    </section>
+
+    <!-- Expenses Page -->
+    <section id="page-expenses" class="page">
+      <div class="filter-bar">
+        <input type="text" id="search" placeholder="🔍 Search expenses..." />
+        <select id="filter-category">
+          <option value="">All Categories</option>
+          <option value="Food">🍔 Food</option>
+          <option value="Transport">🚗 Transport</option>
+          <option value="Shopping">🛍️ Shopping</option>
+          <option value="Entertainment">🎬 Entertainment</option>
+          <option value="Health">💊 Health</option>
+          <option value="Education">📚 Education</option>
+          <option value="Bills">💡 Bills</option>
+          <option value="Other">📦 Other</option>
+        </select>
+        <select id="filter-month">
+          <option value="">All Months</option>
+        </select>
+      </div>
+      <div id="expenses-list"></div>
+    </section>
+
+    <!-- Analytics Page -->
+    <section id="page-analytics" class="page">
+      <div class="charts-row">
+        <div class="chart-box full">
+          <h3>Monthly Trend</h3>
+          <canvas id="lineChart"></canvas>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-box">
+          <h3>Category Breakdown</h3>
+          <canvas id="doughnutChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Top Categories</h3>
+          <div id="category-stats"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">Add Expense</h2>
+        <button class="close-btn" id="closeModal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="expense-form">
+        <input type="hidden" id="expense-id"/>
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" id="f-title" placeholder="e.g. Lunch at restaurant" required/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount (₹) *</label>
+            <input type="number" id="f-amount" placeholder="0.00" min="0" step="0.01" required/>
+          </div>
+          <div class="form-group">
+            <label>Date *</label>
+            <input type="date" id="f-date" required/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Category *</label>
+          <select id="f-category" required>
+            <option value="">Select category</option>
+            <option value="Food">🍔 Food</option>
+            <option value="Transport">🚗 Transport</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Entertainment">🎬 Entertainment</option>
+            <option value="Health">💊 Health</option>
+            <option value="Education">📚 Education</option>
+            <option value="Bills">💡 Bills</option>
+            <option value="Other">📦 Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Note</label>
+          <textarea id="f-note" placeholder="Optional note..."></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" id="cancelModal">Cancel</button>
+          <button type="submit" class="btn-save">Save Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
