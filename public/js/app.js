@@ -180,7 +180,130 @@ function renderBudget() {
   }).join('');
 }
 
-// ===================== EXPENSES CRUD =====================
+// ===================== SMART INSIGHTS =====================
+function renderInsights() {
+  const now = new Date();
+  const ym  = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const pym = (() => { const d = new Date(now.getFullYear(), now.getMonth()-1, 1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
+
+  const thisM  = expenses.filter(e => e.date.startsWith(ym));
+  const prevM  = expenses.filter(e => e.date.startsWith(pym));
+  const thisTotal = thisM.reduce((s,e) => s+e.amount, 0);
+  const prevTotal = prevM.reduce((s,e) => s+e.amount, 0);
+  const thisCats  = getCatTotals(thisM);
+  const prevCats  = getCatTotals(prevM);
+
+  const insights = [];
+
+  // Month over month
+  if (prevTotal > 0) {
+    const diff = ((thisTotal - prevTotal) / prevTotal * 100).toFixed(0);
+    if (diff > 0)  insights.push({ icon:'📈', type:'warning', text:`You've spent <b>${diff}% more</b> this month vs last month (${fmt(thisTotal)} vs ${fmt(prevTotal)}).` });
+    else if (diff < 0) insights.push({ icon:'📉', type:'success', text:`Great! You've spent <b>${Math.abs(diff)}% less</b> this month vs last month. You saved ${fmt(prevTotal - thisTotal)}!` });
+  }
+
+  // Category spike
+  Object.entries(thisCats).forEach(([cat, amt]) => {
+    const prev = prevCats[cat] || 0;
+    if (prev > 0) {
+      const spike = ((amt - prev) / prev * 100).toFixed(0);
+      if (spike >= 40) insights.push({ icon: ICONS[cat]||'📦', type:'warning', text:`${cat} spending is up <b>${spike}%</b> this month (${fmt(amt)} vs ${fmt(prev)} last month).` });
+    }
+  });
+
+  // Top category this month
+  const topCat = Object.entries(thisCats).sort((a,b) => b[1]-a[1])[0];
+  if (topCat && thisTotal > 0) {
+    const pct = (topCat[1]/thisTotal*100).toFixed(0);
+    insights.push({ icon: ICONS[topCat[0]]||'📦', type:'info', text:`<b>${topCat[0]}</b> is your biggest expense this month at ${fmt(topCat[1])} (<b>${pct}%</b> of total).` });
+  }
+
+  // Budget on track
+  const onTrack = budgets.filter(b => {
+    const spent = thisM.filter(e => e.category === b.category).reduce((s,e) => s+e.amount, 0);
+    return spent <= b.amount * 0.5;
+  });
+  if (onTrack.length) insights.push({ icon:'🎯', type:'success', text:`You're on track with <b>${onTrack.map(b=>b.category).join(', ')}</b> budget${onTrack.length>1?'s':''}. Keep it up!` });
+
+  // No expenses yet
+  if (!thisM.length) insights.push({ icon:'💡', type:'info', text:`No expenses recorded this month yet. Start tracking to get insights!` });
+
+  document.getElementById('insights-month').textContent = now.toLocaleString('default',{month:'long',year:'numeric'});
+  document.getElementById('insights-list').innerHTML = insights.slice(0,4).map(i =>
+    `<div class="insight-item insight-${i.type}"><span class="insight-icon">${i.icon}</span><span>${i.text}</span></div>`
+  ).join('');
+}
+
+// ===================== CONFETTI =====================
+function launchConfetti() {
+  const canvas = document.createElement('canvas');
+  canvas.id = 'confetti-canvas';
+  canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const pieces = Array.from({length:120}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * -canvas.height,
+    w: Math.random()*10+5, h: Math.random()*6+4,
+    color: ['#6c63ff','#10b981','#f59e0b','#ec4899','#ef4444','#06b6d4'][Math.floor(Math.random()*6)],
+    rot: Math.random()*360, rotV: (Math.random()-0.5)*6,
+    vx: (Math.random()-0.5)*3, vy: Math.random()*4+2
+  }));
+
+  let frame, done = false;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p => {
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle = p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+      p.x += p.vx; p.y += p.vy; p.rot += p.rotV;
+    });
+    if (!done) frame = requestAnimationFrame(draw);
+  }
+  draw();
+  setTimeout(() => { done = true; cancelAnimationFrame(frame); canvas.remove(); }, 3000);
+}
+
+function checkConfetti() {
+  if (!budgets.length) return;
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const allUnder = budgets.every(b => {
+    const spent = expenses.filter(e => e.category === b.category && e.date.startsWith(ym)).reduce((s,e) => s+e.amount, 0);
+    return spent <= b.amount;
+  });
+  if (allUnder) { launchConfetti(); toast('🎉 Amazing! All budgets on track this month!', 'success'); }
+}
+
+// ===================== SWIPE TO DELETE =====================
+function initSwipe(el) {
+  let startX = 0, curX = 0, swiping = false;
+  const item = el.querySelector('.swipe-inner');
+  if (!item) return;
+
+  el.addEventListener('touchstart', e => { startX = e.touches[0].clientX; swiping = true; }, { passive:true });
+  el.addEventListener('touchmove', e => {
+    if (!swiping) return;
+    curX = e.touches[0].clientX - startX;
+    if (curX < 0) item.style.transform = `translateX(${Math.max(curX,-80)}px)`;
+  }, { passive:true });
+  el.addEventListener('touchend', () => {
+    swiping = false;
+    if (curX < -60) {
+      item.style.transform = 'translateX(-80px)';
+      el.classList.add('swiped');
+    } else {
+      item.style.transform = '';
+      el.classList.remove('swiped');
+    }
+    curX = 0;
+  });
+}
+
 function saveExpense(data) {
   const id = document.getElementById('expense-id').value;
   if (id) {
