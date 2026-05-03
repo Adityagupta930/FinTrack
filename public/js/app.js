@@ -858,3 +858,183 @@ initRipple();
 initContextMenu();
 initFormatToggle();
 initPageTransitions();
+
+// ===================== PARTICLES =====================
+function initParticles() {
+  const canvas = document.createElement('canvas');
+  canvas.id = 'particle-canvas';
+  document.body.prepend(canvas);
+  const ctx = canvas.getContext('2d');
+
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const particles = Array.from({ length: 28 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 2.5 + 1,
+    vx: (Math.random() - 0.5) * 0.4,
+    vy: (Math.random() - 0.5) * 0.4,
+    alpha: Math.random() * 0.4 + 0.1
+  }));
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const color = isDark() ? '180,180,255' : '108,99,255';
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${color},${p.alpha})`;
+      ctx.fill();
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
+      if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ===================== RIPPLE EFFECT =====================
+function initRipple() {
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.btn-save, .btn-add, .btn-export, .nav-link, .bottom-nav-item');
+    if (!btn) return;
+    btn.classList.add('ripple-host');
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const r = document.createElement('span');
+    r.className = 'ripple';
+    r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+    btn.appendChild(r);
+    setTimeout(() => r.remove(), 600);
+  });
+}
+
+// ===================== RIGHT-CLICK CONTEXT MENU =====================
+function initContextMenu() {
+  const menu = document.createElement('div');
+  menu.className = 'ctx-menu';
+  menu.style.display = 'none';
+  document.body.appendChild(menu);
+
+  let ctxId = null;
+
+  document.addEventListener('contextmenu', e => {
+    const item = e.target.closest('.swipe-item, .expense-item');
+    if (!item) return;
+    e.preventDefault();
+    ctxId = item.dataset.id;
+    const exp = expenses.find(x => x.id === ctxId);
+    if (!exp) return;
+
+    menu.innerHTML = `
+      <div class="ctx-item" id="ctx-edit"><i class="fa-solid fa-pen"></i> Edit</div>
+      <div class="ctx-item" id="ctx-copy"><i class="fa-solid fa-copy"></i> Duplicate</div>
+      <div class="ctx-divider"></div>
+      <div class="ctx-item danger" id="ctx-delete"><i class="fa-solid fa-trash"></i> Delete</div>`;
+
+    menu.style.display = 'block';
+    const x = Math.min(e.clientX, window.innerWidth  - 180);
+    const y = Math.min(e.clientY, window.innerHeight - 160);
+    menu.style.left = x + 'px';
+    menu.style.top  = y + 'px';
+
+    document.getElementById('ctx-edit').onclick   = () => { openEdit(ctxId); hideCtx(); };
+    document.getElementById('ctx-copy').onclick   = () => {
+      const copy = { ...exp, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+      expenses.unshift(copy); persist(); render();
+      toast('Expense duplicated!'); hideCtx();
+    };
+    document.getElementById('ctx-delete').onclick = () => { deleteExpense(ctxId); hideCtx(); };
+  });
+
+  function hideCtx() { menu.style.display = 'none'; }
+  document.addEventListener('click', hideCtx);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hideCtx(); });
+}
+
+// ===================== NUMBER FORMAT TOGGLE =====================
+let useLakhFormat = false;
+
+function fmtSmart(n) {
+  if (!useLakhFormat) return '₹' + Number(n).toLocaleString('en-IN');
+  if (n >= 10000000) return '₹' + (n/10000000).toFixed(1) + 'Cr';
+  if (n >= 100000)   return '₹' + (n/100000).toFixed(1) + 'L';
+  if (n >= 1000)     return '₹' + (n/1000).toFixed(1) + 'K';
+  return '₹' + n;
+}
+
+function initFormatToggle() {
+  // Add toggle button next to each card value
+  document.querySelectorAll('.card-value').forEach(el => {
+    const btn = document.createElement('span');
+    btn.className = 'fmt-toggle';
+    btn.title = 'Toggle number format';
+    btn.textContent = '1.2L';
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      useLakhFormat = !useLakhFormat;
+      document.querySelectorAll('.fmt-toggle').forEach(b => b.textContent = useLakhFormat ? '1,00,000' : '1.2L');
+      renderDashboard();
+    });
+    el.parentElement.appendChild(btn);
+  });
+}
+
+// Override fmt to use smart format
+const _origFmt = fmt;
+function fmt(n) { return fmtSmart(n); }
+
+// ===================== PAGE TRANSITIONS =====================
+const PAGE_ORDER = ['dashboard','expenses','recurring','analytics','budget'];
+let lastPageIdx = 0;
+
+function initPageTransitions() {
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      const page = link.dataset.page;
+      if (!page) return;
+      const newIdx = PAGE_ORDER.indexOf(page);
+      const dir = newIdx >= lastPageIdx ? 'slide-right' : 'slide-left';
+      const pageEl = document.getElementById(`page-${page}`);
+      if (pageEl) {
+        pageEl.classList.remove('slide-right','slide-left');
+        void pageEl.offsetWidth; // reflow
+        pageEl.classList.add(dir);
+      }
+      lastPageIdx = newIdx;
+    });
+  });
+}
+
+// ===================== SKELETON LOADING =====================
+function showSkeleton(containerId, count = 3) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = Array.from({ length: count }, () => `
+    <div style="padding:14px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="skeleton" style="width:42px;height:42px;border-radius:12px;flex-shrink:0"></div>
+        <div style="flex:1">
+          <div class="skeleton skeleton-line medium"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+        <div class="skeleton skeleton-line" style="width:60px;height:16px"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ===================== CUSTOM CHART TOOLTIPS =====================
+Chart.defaults.plugins.tooltip.backgroundColor = 'var(--white)';
+Chart.defaults.plugins.tooltip.titleColor       = 'var(--text)';
+Chart.defaults.plugins.tooltip.bodyColor        = 'var(--text2)';
+Chart.defaults.plugins.tooltip.borderColor      = 'var(--border)';
+Chart.defaults.plugins.tooltip.borderWidth      = 1;
+Chart.defaults.plugins.tooltip.padding          = 10;
+Chart.defaults.plugins.tooltip.cornerRadius     = 10;
+Chart.defaults.plugins.tooltip.titleFont        = { family: 'Inter', weight: '700', size: 13 };
+Chart.defaults.plugins.tooltip.bodyFont         = { family: 'Inter', size: 12 };
+Chart.defaults.animation.duration               = 800;
+Chart.defaults.animation.easing                 = 'easeInOutQuart';
