@@ -316,6 +316,7 @@ function saveExpense(data) {
   persist();
   render();
   checkBudgetAlerts();
+  checkConfetti();
 }
 
 function deleteExpense(id) {
@@ -391,8 +392,8 @@ function getFilteredExpenses() {
   );
 }
 
-function expenseHTML(e) {
-  return `<div class="expense-item">
+function expenseHTML(e, swipeable = false) {
+  const inner = `
     <div class="expense-left">
       <div class="expense-icon">${ICONS[e.category]||'📦'}</div>
       <div>
@@ -406,8 +407,15 @@ function expenseHTML(e) {
         <button class="btn-edit" onclick="openEdit('${e.id}')"><i class="fa-solid fa-pen"></i></button>
         <button class="btn-delete" onclick="deleteExpense('${e.id}')"><i class="fa-solid fa-trash"></i></button>
       </div>
-    </div>
-  </div>`;
+    </div>`;
+
+  if (swipeable) {
+    return `<div class="expense-item swipe-item" data-id="${e.id}">
+      <div class="swipe-delete-bg"><i class="fa-solid fa-trash"></i> Delete</div>
+      <div class="swipe-inner">${inner}</div>
+    </div>`;
+  }
+  return `<div class="expense-item">${inner}</div>`;
 }
 
 function emptyHTML() { return `<div class="empty"><div class="empty-icon">💸</div><p>No expenses found.</p></div>`; }
@@ -419,6 +427,7 @@ function render() {
   renderAnalytics();
   renderRecurring();
   renderBudget();
+  renderInsights();
 }
 
 function renderDashboard() {
@@ -434,7 +443,7 @@ function renderDashboard() {
   const catTotals = getCatTotals(expenses);
   const top = Object.entries(catTotals).sort((a,b) => b[1]-a[1])[0];
   document.getElementById('top-category').textContent = top ? `${ICONS[top[0]]||'📦'} ${top[0]}` : '—';
-  document.getElementById('recent-list').innerHTML = expenses.slice(0,5).map(expenseHTML).join('') || emptyHTML();
+  document.getElementById('recent-list').innerHTML = expenses.slice(0,5).map(e => expenseHTML(e)).join('') || emptyHTML();
 
   const months = getLast6Months();
   const labels = months.map(m => { const [y,mo]=m.split('-'); return new Date(y,mo-1).toLocaleString('default',{month:'short'}); });
@@ -464,7 +473,19 @@ function renderExpensesList() {
     return `<option value="${m}" ${m===cur?'selected':''}>${new Date(y,mo-1).toLocaleString('default',{month:'long',year:'numeric'})}</option>`;
   }).join('');
   const filtered = getFilteredExpenses();
-  document.getElementById('expenses-list').innerHTML = filtered.map(expenseHTML).join('') || emptyHTML();
+  document.getElementById('expenses-list').innerHTML = filtered.map(e => expenseHTML(e, true)).join('') || emptyHTML();
+  // init swipe on each item
+  document.querySelectorAll('.swipe-item').forEach(el => {
+    initSwipe(el);
+    el.addEventListener('transitionend', () => {
+      if (el.classList.contains('swiped')) {
+        const id = el.dataset.id;
+        el.style.transition = 'opacity 0.3s';
+        el.style.opacity = '0';
+        setTimeout(() => { expenses = expenses.filter(e => e.id !== id); persist(); render(); toast('Expense deleted.', 'info'); }, 300);
+      }
+    });
+  });
 }
 
 function renderAnalytics() {
