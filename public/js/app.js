@@ -1,6 +1,7 @@
-const API = '/api/expenses';
 let expenses = [];
 let barChart, pieChart, lineChart, doughnutChart;
+
+const STORAGE_KEY = 'fintrack_expenses';
 
 const CATEGORY_ICONS = {
   Food: '🍔', Transport: '🚗', Shopping: '🛍️',
@@ -10,25 +11,28 @@ const CATEGORY_ICONS = {
 
 const CHART_COLORS = ['#6c63ff','#00d4aa','#ffd93d','#ff6b6b','#ff9f43','#a29bfe','#fd79a8','#74b9ff'];
 
-// --- API ---
-async function fetchExpenses() {
-  const res = await fetch(API);
-  expenses = await res.json();
+// --- localStorage ---
+function loadExpenses() {
+  expenses = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
   render();
 }
 
-async function saveExpense(data) {
+function saveExpense(data) {
   const id = document.getElementById('expense-id').value;
-  const method = id ? 'PUT' : 'POST';
-  const url = id ? `${API}/${id}` : API;
-  await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-  await fetchExpenses();
+  if (id) {
+    expenses = expenses.map(e => e.id === id ? { ...e, ...data, id } : e);
+  } else {
+    expenses.unshift({ id: crypto.randomUUID(), ...data, amount: parseFloat(data.amount), createdAt: new Date().toISOString() });
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+  render();
 }
 
-async function deleteExpense(id) {
+function deleteExpense(id) {
   if (!confirm('Delete this expense?')) return;
-  await fetch(`${API}/${id}`, { method: 'DELETE' });
-  await fetchExpenses();
+  expenses = expenses.filter(e => e.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+  render();
 }
 
 // --- Render ---
@@ -223,9 +227,9 @@ document.getElementById('closeModal').addEventListener('click', closeModal);
 document.getElementById('cancelModal').addEventListener('click', closeModal);
 document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
 
-document.getElementById('expense-form').addEventListener('submit', async e => {
+document.getElementById('expense-form').addEventListener('submit', e => {
   e.preventDefault();
-  await saveExpense({
+  saveExpense({
     title: document.getElementById('f-title').value.trim(),
     amount: document.getElementById('f-amount').value,
     date: document.getElementById('f-date').value,
@@ -240,4 +244,4 @@ document.getElementById('filter-category').addEventListener('change', renderExpe
 document.getElementById('filter-month').addEventListener('change', renderExpensesList);
 
 // --- Init ---
-fetchExpenses();
+loadExpenses();
