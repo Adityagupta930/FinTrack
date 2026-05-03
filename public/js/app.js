@@ -481,13 +481,15 @@ function getFilteredExpenses() {
   );
 }
 
-function expenseHTML(e, swipeable = false) {
+function expenseHTML(e, swipeable = false, query = '') {
+  const title = highlight(e.title, query);
+  const note  = e.note ? highlight(e.note, query) : '';
   const inner = `
     <div class="expense-left">
       <div class="expense-icon">${ICONS[e.category]||'📦'}</div>
       <div>
-        <div class="expense-title">${e.title}</div>
-        <div class="expense-meta">${e.category} &nbsp;·&nbsp; ${new Date(e.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}${e.note ? ' &nbsp;·&nbsp; '+e.note : ''}</div>
+        <div class="expense-title">${title}</div>
+        <div class="expense-meta">${e.category} &nbsp;·&nbsp; ${new Date(e.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}${note ? ' &nbsp;·&nbsp; '+note : ''}</div>
       </div>
     </div>
     <div class="expense-right">
@@ -497,7 +499,6 @@ function expenseHTML(e, swipeable = false) {
         <button class="btn-delete" onclick="deleteExpense('${e.id}')"><i class="fa-solid fa-trash"></i></button>
       </div>
     </div>`;
-
   if (swipeable) {
     return `<div class="expense-item swipe-item" data-id="${e.id}">
       <div class="swipe-delete-bg"><i class="fa-solid fa-trash"></i> Delete</div>
@@ -563,20 +564,20 @@ function renderExpensesList() {
     const [y,mo] = m.split('-');
     return `<option value="${m}" ${m===cur?'selected':''}>${new Date(y,mo-1).toLocaleString('default',{month:'long',year:'numeric'})}</option>`;
   }).join('');
+  const search = document.getElementById('search').value.toLowerCase();
   const filtered = getFilteredExpenses();
-  document.getElementById('expenses-list').innerHTML = filtered.map(e => expenseHTML(e, true)).join('') || emptyHTML();
-  // init swipe on each item
+  const list = document.getElementById('expenses-list');
+  list.innerHTML = filtered.map(e => expenseHTML(e, true, search)).join('') || emptyHTML();
   document.querySelectorAll('.swipe-item').forEach(el => {
     initSwipe(el);
     el.addEventListener('transitionend', () => {
       if (el.classList.contains('swiped')) {
-        const id = el.dataset.id;
-        el.style.transition = 'opacity 0.3s';
-        el.style.opacity = '0';
-        setTimeout(() => { expenses = expenses.filter(e => e.id !== id); persist(); render(); toast('Expense deleted.', 'info'); }, 300);
+        el.style.transition = 'opacity 0.3s'; el.style.opacity = '0';
+        setTimeout(() => { expenses = expenses.filter(e => e.id !== el.dataset.id); persist(); render(); toast('Expense deleted.', 'info'); }, 300);
       }
     });
   });
+  initDragDrop(list);
 }
 
 function renderAnalytics() {
@@ -672,6 +673,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
     const subs   = { dashboard:"Welcome back! Here's your financial overview.", expenses:'Manage and track all your expenses.', recurring:'Auto-recurring monthly expenses.', analytics:'Deep dive into your spending patterns.', budget:'Set and track monthly spending limits.' };
     document.getElementById('page-title').textContent = titles[page];
     document.getElementById('page-sub').textContent   = subs[page];
+    syncBottomNav(page);
   });
 });
 
@@ -848,3 +850,6 @@ initTheme();
 restoreUser();
 load();
 initOnboarding();
+initReceiptPreview();
+initQuickAdd();
+initBottomNav();
