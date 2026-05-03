@@ -637,6 +637,35 @@ document.getElementById('date-to').addEventListener('change', renderExpensesList
 document.getElementById('exportCSV').addEventListener('click', exportCSV);
 document.getElementById('exportPDF').addEventListener('click', exportPDF);
 
+// ===================== COUNTER ANIMATION =====================
+function animateCount(el, target, prefix = '') {
+  const start = 0, duration = 600;
+  const startTime = performance.now();
+  function update(now) {
+    const p = Math.min((now - startTime) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    const val = Math.floor(ease * target);
+    el.textContent = prefix + val.toLocaleString('en-IN');
+    if (p < 1) requestAnimationFrame(update);
+    else el.textContent = prefix + target.toLocaleString('en-IN');
+  }
+  requestAnimationFrame(update);
+}
+
+// ===================== SIDEBAR MOBILE =====================
+const backdrop = document.createElement('div');
+backdrop.className = 'sidebar-backdrop';
+document.body.appendChild(backdrop);
+
+document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+  backdrop.classList.toggle('show');
+});
+backdrop.addEventListener('click', () => {
+  document.getElementById('sidebar').classList.remove('open');
+  backdrop.classList.remove('show');
+});
+
 // Today date
 document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
 
