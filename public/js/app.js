@@ -435,10 +435,12 @@ function renderDashboard() {
   const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const thisMonth = expenses.filter(e => e.date.startsWith(ym));
 
-  document.getElementById('total-spent').textContent  = fmt(expenses.reduce((s,e) => s+e.amount, 0));
-  document.getElementById('month-spent').textContent  = fmt(thisMonth.reduce((s,e) => s+e.amount, 0));
-  document.getElementById('total-count').textContent  = expenses.length;
-  document.getElementById('month-name').textContent   = now.toLocaleString('default',{month:'long',year:'numeric'});
+  const totalSpent = expenses.reduce((s,e) => s+e.amount, 0);
+  const monthSpent = thisMonth.reduce((s,e) => s+e.amount, 0);
+  animateCount(document.getElementById('total-spent'), totalSpent, '₹');
+  animateCount(document.getElementById('month-spent'), monthSpent, '₹');
+  animateCount(document.getElementById('total-count'), expenses.length);
+  document.getElementById('month-name').textContent = now.toLocaleString('default',{month:'long',year:'numeric'});
 
   const catTotals = getCatTotals(expenses);
   const top = Object.entries(catTotals).sort((a,b) => b[1]-a[1])[0];
