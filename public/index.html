@@ -3,84 +3,146 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FinTrack - Expense Tracker</title>
+  <title>FinTrack — Smart Expense Tracker</title>
   <link rel="stylesheet" href="css/style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+
   <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="logo"><i class="fa-solid fa-wallet"></i> FinTrack</div>
-    <nav>
-      <a href="#" class="nav-link active" data-page="dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</a>
-      <a href="#" class="nav-link" data-page="expenses"><i class="fa-solid fa-list"></i> Expenses</a>
-      <a href="#" class="nav-link" data-page="analytics"><i class="fa-solid fa-chart-pie"></i> Analytics</a>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <div class="logo">
+        <div class="logo-icon"><i class="fa-solid fa-bolt"></i></div>
+        <span class="logo-text">FinTrack</span>
+      </div>
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+    </div>
+
+    <nav class="nav">
+      <a href="#" class="nav-link active" data-page="dashboard">
+        <div class="nav-icon"><i class="fa-solid fa-house"></i></div>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-link" data-page="expenses">
+        <div class="nav-icon"><i class="fa-solid fa-wallet"></i></div>
+        <span>Expenses</span>
+      </a>
+      <a href="#" class="nav-link" data-page="analytics">
+        <div class="nav-icon"><i class="fa-solid fa-chart-line"></i></div>
+        <span>Analytics</span>
+      </a>
     </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-badge">
+        <div class="user-avatar">FT</div>
+        <div class="user-info">
+          <span class="user-name">FinTrack</span>
+          <span class="user-sub">Personal</span>
+        </div>
+      </div>
+    </div>
   </aside>
 
-  <!-- Main -->
-  <main class="main">
-    <!-- Header -->
+  <!-- Main Content -->
+  <main class="main" id="main">
+
+    <!-- Topbar -->
     <header class="topbar">
-      <h1 id="page-title">Dashboard</h1>
-      <button class="btn-add" id="openModal"><i class="fa-solid fa-plus"></i> Add Expense</button>
+      <div class="topbar-left">
+        <h1 id="page-title">Dashboard</h1>
+        <p id="page-sub">Welcome back! Here's your financial overview.</p>
+      </div>
+      <div class="topbar-right">
+        <div class="date-badge"><i class="fa-regular fa-calendar"></i> <span id="today-date"></span></div>
+        <button class="btn-add" id="openModal">
+          <i class="fa-solid fa-plus"></i> Add Expense
+        </button>
+      </div>
     </header>
 
-    <!-- Dashboard Page -->
+    <!-- Dashboard -->
     <section id="page-dashboard" class="page active">
+
+      <!-- Stat Cards -->
       <div class="cards">
-        <div class="card card-total">
-          <div class="card-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
-          <div>
-            <p>Total Spent</p>
-            <h2 id="total-spent">₹0</h2>
+        <div class="card card-1">
+          <div class="card-bg"></div>
+          <div class="card-content">
+            <div class="card-label">Total Spent</div>
+            <div class="card-value" id="total-spent">₹0</div>
+            <div class="card-sub">All time</div>
           </div>
+          <div class="card-icon-wrap"><i class="fa-solid fa-indian-rupee-sign"></i></div>
         </div>
-        <div class="card card-month">
-          <div class="card-icon"><i class="fa-solid fa-calendar"></i></div>
-          <div>
-            <p>This Month</p>
-            <h2 id="month-spent">₹0</h2>
+        <div class="card card-2">
+          <div class="card-bg"></div>
+          <div class="card-content">
+            <div class="card-label">This Month</div>
+            <div class="card-value" id="month-spent">₹0</div>
+            <div class="card-sub" id="month-name">Current month</div>
           </div>
+          <div class="card-icon-wrap"><i class="fa-solid fa-calendar-days"></i></div>
         </div>
-        <div class="card card-count">
-          <div class="card-icon"><i class="fa-solid fa-receipt"></i></div>
-          <div>
-            <p>Transactions</p>
-            <h2 id="total-count">0</h2>
+        <div class="card card-3">
+          <div class="card-bg"></div>
+          <div class="card-content">
+            <div class="card-label">Transactions</div>
+            <div class="card-value" id="total-count">0</div>
+            <div class="card-sub">Total entries</div>
           </div>
+          <div class="card-icon-wrap"><i class="fa-solid fa-receipt"></i></div>
         </div>
-        <div class="card card-top">
-          <div class="card-icon"><i class="fa-solid fa-fire"></i></div>
-          <div>
-            <p>Top Category</p>
-            <h2 id="top-category">-</h2>
+        <div class="card card-4">
+          <div class="card-bg"></div>
+          <div class="card-content">
+            <div class="card-label">Top Category</div>
+            <div class="card-value" id="top-category" style="font-size:18px">—</div>
+            <div class="card-sub">Highest spend</div>
           </div>
+          <div class="card-icon-wrap"><i class="fa-solid fa-fire-flame-curved"></i></div>
         </div>
       </div>
 
+      <!-- Charts -->
       <div class="charts-row">
-        <div class="chart-box">
-          <h3>Monthly Spending</h3>
+        <div class="glass-box chart-wide">
+          <div class="box-header">
+            <span class="box-title">Monthly Spending</span>
+            <span class="box-badge">Last 6 months</span>
+          </div>
           <canvas id="barChart"></canvas>
         </div>
-        <div class="chart-box">
-          <h3>By Category</h3>
+        <div class="glass-box">
+          <div class="box-header">
+            <span class="box-title">By Category</span>
+          </div>
           <canvas id="pieChart"></canvas>
         </div>
       </div>
 
-      <div class="recent-box">
-        <h3>Recent Expenses</h3>
+      <!-- Recent -->
+      <div class="glass-box">
+        <div class="box-header">
+          <span class="box-title">Recent Transactions</span>
+          <a href="#" class="view-all" data-page="expenses">View all →</a>
+        </div>
         <div id="recent-list"></div>
       </div>
+
     </section>
 
-    <!-- Expenses Page -->
+    <!-- Expenses -->
     <section id="page-expenses" class="page">
-      <div class="filter-bar">
-        <input type="text" id="search" placeholder="🔍 Search expenses..." />
+      <div class="filter-bar glass-box">
+        <div class="search-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="search" placeholder="Search expenses..."/>
+        </div>
         <select id="filter-category">
           <option value="">All Categories</option>
           <option value="Food">🍔 Food</option>
@@ -96,74 +158,89 @@
           <option value="">All Months</option>
         </select>
       </div>
-      <div id="expenses-list"></div>
+      <div class="glass-box" style="margin-top:16px">
+        <div id="expenses-list"></div>
+      </div>
     </section>
 
-    <!-- Analytics Page -->
+    <!-- Analytics -->
     <section id="page-analytics" class="page">
-      <div class="charts-row">
-        <div class="chart-box full">
-          <h3>Monthly Trend</h3>
-          <canvas id="lineChart"></canvas>
+      <div class="glass-box" style="margin-bottom:16px">
+        <div class="box-header">
+          <span class="box-title">Spending Trend</span>
+          <span class="box-badge">Last 6 months</span>
         </div>
+        <canvas id="lineChart"></canvas>
       </div>
       <div class="charts-row">
-        <div class="chart-box">
-          <h3>Category Breakdown</h3>
+        <div class="glass-box">
+          <div class="box-header"><span class="box-title">Category Split</span></div>
           <canvas id="doughnutChart"></canvas>
         </div>
-        <div class="chart-box">
-          <h3>Top Categories</h3>
+        <div class="glass-box">
+          <div class="box-header"><span class="box-title">Top Categories</span></div>
           <div id="category-stats"></div>
         </div>
       </div>
     </section>
+
   </main>
 
   <!-- Modal -->
   <div class="modal-overlay" id="modal">
     <div class="modal">
       <div class="modal-header">
-        <h2 id="modal-title">Add Expense</h2>
+        <div>
+          <h2 id="modal-title">Add Expense</h2>
+          <p style="font-size:13px;color:var(--text3);margin-top:2px">Fill in the details below</p>
+        </div>
         <button class="close-btn" id="closeModal"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <form id="expense-form">
         <input type="hidden" id="expense-id"/>
+
         <div class="form-group">
-          <label>Title *</label>
-          <input type="text" id="f-title" placeholder="e.g. Lunch at restaurant" required/>
+          <label>Title</label>
+          <input type="text" id="f-title" placeholder="e.g. Lunch, Uber ride..." required/>
         </div>
+
         <div class="form-row">
           <div class="form-group">
-            <label>Amount (₹) *</label>
-            <input type="number" id="f-amount" placeholder="0.00" min="0" step="0.01" required/>
+            <label>Amount (₹)</label>
+            <div class="input-prefix">
+              <span>₹</span>
+              <input type="number" id="f-amount" placeholder="0.00" min="0" step="0.01" required/>
+            </div>
           </div>
           <div class="form-group">
-            <label>Date *</label>
+            <label>Date</label>
             <input type="date" id="f-date" required/>
           </div>
         </div>
+
         <div class="form-group">
-          <label>Category *</label>
-          <select id="f-category" required>
-            <option value="">Select category</option>
-            <option value="Food">🍔 Food</option>
-            <option value="Transport">🚗 Transport</option>
-            <option value="Shopping">🛍️ Shopping</option>
-            <option value="Entertainment">🎬 Entertainment</option>
-            <option value="Health">💊 Health</option>
-            <option value="Education">📚 Education</option>
-            <option value="Bills">💡 Bills</option>
-            <option value="Other">📦 Other</option>
-          </select>
+          <label>Category</label>
+          <div class="cat-grid" id="cat-grid">
+            <div class="cat-chip" data-val="Food">🍔 Food</div>
+            <div class="cat-chip" data-val="Transport">🚗 Transport</div>
+            <div class="cat-chip" data-val="Shopping">🛍️ Shopping</div>
+            <div class="cat-chip" data-val="Entertainment">🎬 Entertainment</div>
+            <div class="cat-chip" data-val="Health">💊 Health</div>
+            <div class="cat-chip" data-val="Education">📚 Education</div>
+            <div class="cat-chip" data-val="Bills">💡 Bills</div>
+            <div class="cat-chip" data-val="Other">📦 Other</div>
+          </div>
+          <input type="hidden" id="f-category" required/>
         </div>
+
         <div class="form-group">
-          <label>Note</label>
-          <textarea id="f-note" placeholder="Optional note..."></textarea>
+          <label>Note <span style="color:var(--text3)">(optional)</span></label>
+          <textarea id="f-note" placeholder="Add a note..."></textarea>
         </div>
+
         <div class="form-actions">
           <button type="button" class="btn-cancel" id="cancelModal">Cancel</button>
-          <button type="submit" class="btn-save">Save Expense</button>
+          <button type="submit" class="btn-save"><i class="fa-solid fa-check"></i> Save</button>
         </div>
       </form>
     </div>
