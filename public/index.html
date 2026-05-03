@@ -147,6 +147,28 @@
       </div>
     </section>
 
+    <!-- Quick Add Bar -->
+    <div class="quick-add-bar glass-box" id="quick-add-bar">
+      <span class="quick-add-label">⚡ Quick Add</span>
+      <input type="text" id="qa-title" placeholder="What did you spend on?"/>
+      <div class="input-prefix qa-amount-wrap">
+        <span>₹</span>
+        <input type="number" id="qa-amount" placeholder="Amount" min="0"/>
+      </div>
+      <select id="qa-category">
+        <option value="">Category</option>
+        <option value="Food">🍔 Food</option>
+        <option value="Transport">🚗 Transport</option>
+        <option value="Shopping">🛍️ Shopping</option>
+        <option value="Entertainment">🎬 Entertainment</option>
+        <option value="Health">💊 Health</option>
+        <option value="Education">📚 Education</option>
+        <option value="Bills">💡 Bills</option>
+        <option value="Other">📦 Other</option>
+      </select>
+      <button class="btn-save" id="qa-submit"><i class="fa-solid fa-bolt"></i> Add</button>
+    </div>
+
     <!-- Expenses -->
     <section id="page-expenses" class="page">
       <div class="filter-bar glass-box">
