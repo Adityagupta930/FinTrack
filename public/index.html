@@ -377,6 +377,80 @@
     </div>
   </div>
 
+  <!-- Onboarding -->
+  <div class="onboarding-overlay" id="onboarding">
+    <div class="onboarding-card">
+      <div class="ob-steps">
+        <div class="ob-step active" id="ob-step-1">
+          <div class="ob-emoji">👋</div>
+          <h2>Welcome to FinTrack!</h2>
+          <p>Your smart personal finance tracker. Let's get you set up in 3 quick steps.</p>
+          <button class="btn-save ob-next" data-next="2">Get Started →</button>
+        </div>
+        <div class="ob-step" id="ob-step-2">
+          <div class="ob-emoji">👤</div>
+          <h2>What's your name?</h2>
+          <p>We'll personalize your dashboard.</p>
+          <input type="text" id="ob-name" placeholder="Enter your name..." maxlength="20"/>
+          <button class="btn-save ob-next" data-next="3">Continue →</button>
+        </div>
+        <div class="ob-step" id="ob-step-3">
+          <div class="ob-emoji">🎯</div>
+          <h2>Set a monthly budget?</h2>
+          <p>Set your total monthly spending limit (you can change this later).</p>
+          <div class="input-prefix" style="margin-bottom:16px">
+            <span>₹</span>
+            <input type="number" id="ob-budget" placeholder="e.g. 20000" min="0"/>
+          </div>
+          <button class="btn-save ob-next" data-next="4">Continue →</button>
+          <button class="btn-cancel ob-skip">Skip for now</button>
+        </div>
+        <div class="ob-step" id="ob-step-4">
+          <div class="ob-emoji">🎉</div>
+          <h2>You're all set!</h2>
+          <p>Start tracking your expenses and take control of your finances.</p>
+          <div class="ob-features">
+            <div class="ob-feat"><span>📊</span> Smart Analytics</div>
+            <div class="ob-feat"><span>🔄</span> Recurring Expenses</div>
+            <div class="ob-feat"><span>🎯</span> Budget Alerts</div>
+            <div class="ob-feat"><span>✨</span> AI Insights</div>
+          </div>
+          <button class="btn-save" id="ob-finish">Start Tracking 🚀</button>
+        </div>
+      </div>
+      <div class="ob-dots">
+        <span class="ob-dot active"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+        <span class="ob-dot"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Help -->  
+  <div class="shortcuts-overlay" id="shortcutsModal">
+    <div class="shortcuts-card">
+      <div class="modal-header">
+        <h2>⌨️ Keyboard Shortcuts</h2>
+        <button class="close-btn" id="closeShortcuts"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="shortcut-list">
+        <div class="shortcut-item"><kbd>N</kbd><span>Add new expense</span></div>
+        <div class="shortcut-item"><kbd>Esc</kbd><span>Close modal</span></div>
+        <div class="shortcut-item"><kbd>1</kbd><span>Go to Dashboard</span></div>
+        <div class="shortcut-item"><kbd>2</kbd><span>Go to Expenses</span></div>
+        <div class="shortcut-item"><kbd>3</kbd><span>Go to Recurring</span></div>
+        <div class="shortcut-item"><kbd>4</kbd><span>Go to Analytics</span></div>
+        <div class="shortcut-item"><kbd>5</kbd><span>Go to Budget</span></div>
+        <div class="shortcut-item"><kbd>D</kbd><span>Toggle Dark/Light mode</span></div>
+        <div class="shortcut-item"><kbd>?</kbd><span>Show this help</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating shortcut hint -->
+  <button class="shortcut-fab" id="openShortcuts" title="Keyboard Shortcuts (?)">⌨️</button>
+
   <script src="js/app.js"></script>
 </body>
 </html>
