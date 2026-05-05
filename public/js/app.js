@@ -472,24 +472,27 @@ function getFilteredExpenses() {
   const month  = document.getElementById('filter-month').value;
   const from   = document.getElementById('date-from').value;
   const to     = document.getElementById('date-to').value;
+  const tag    = document.getElementById('filter-tag').value;
   return expenses.filter(e =>
     (!search || e.title.toLowerCase().includes(search) || (e.note||'').toLowerCase().includes(search)) &&
     (!cat    || e.category === cat) &&
     (!month  || e.date.startsWith(month)) &&
     (!from   || e.date >= from) &&
-    (!to     || e.date <= to)
+    (!to     || e.date <= to) &&
+    (!tag    || (e.tags||[]).includes(tag))
   );
 }
 
 function expenseHTML(e, swipeable = false, query = '') {
   const title = highlight(e.title, query);
   const note  = e.note ? highlight(e.note, query) : '';
+  const tagsHTML = (e.tags||[]).map(t => `<span class="expense-tag" onclick="filterByTag('${t}')">#${t}</span>`).join('');
   const inner = `
     <div class="expense-left">
       <div class="expense-icon">${ICONS[e.category]||'📦'}</div>
       <div>
         <div class="expense-title">${title}</div>
-        <div class="expense-meta">${e.category} &nbsp;·&nbsp; ${new Date(e.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}${note ? ' &nbsp;·&nbsp; '+note : ''}</div>
+        <div class="expense-meta">${e.category} &nbsp;·&nbsp; ${new Date(e.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}${note ? ' &nbsp;·&nbsp; '+note : ''}${tagsHTML ? '<br>'+tagsHTML : ''}</div>
       </div>
     </div>
     <div class="expense-right">
@@ -518,6 +521,7 @@ function render() {
   renderRecurring();
   renderBudget();
   renderInsights();
+  renderTagFilter();
 }
 
 function renderDashboard() {
@@ -611,6 +615,8 @@ function renderAnalytics() {
         <div class="cat-bar-wrap"><div class="cat-bar" style="width:${total?(amt/total*100).toFixed(0):0}%;background:${COLORS[i%COLORS.length]}"></div></div>
         <div class="cat-amt">${fmt(amt)}</div>
       </div>`).join('') || '<p style="color:var(--text3);font-size:13px;padding:16px 0">No data yet</p>';
+
+  renderReportCard();
 }
 
 // ===================== MODALS =====================
@@ -620,8 +626,10 @@ function openModal(id = null) {
   document.getElementById('expense-form').reset();
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('f-category').value = '';
+  document.getElementById('f-tags').value = '';
   document.querySelectorAll('.cat-chip:not(.r-chip)').forEach(c => c.classList.remove('selected'));
   document.getElementById('modal-title').textContent = id ? 'Edit Expense' : 'Add Expense';
+  renderTagChipsPreview([]);
   if (id) {
     const e = expenses.find(x => x.id === id);
     if (!e) return;
@@ -631,7 +639,9 @@ function openModal(id = null) {
     document.getElementById('f-date').value = e.date;
     document.getElementById('f-category').value = e.category;
     document.getElementById('f-note').value = e.note || '';
+    document.getElementById('f-tags').value = (e.tags||[]).join(',');
     document.querySelectorAll('.cat-chip:not(.r-chip)').forEach(c => c.classList.toggle('selected', c.dataset.val === e.category));
+    renderTagChipsPreview(e.tags||[]);
   }
 }
 
@@ -689,7 +699,8 @@ document.getElementById('expense-form').addEventListener('submit', e => {
   e.preventDefault();
   const cat = document.getElementById('f-category').value;
   if (!cat) { toast('Please select a category!', 'warning'); return; }
-  saveExpense({ title: document.getElementById('f-title').value.trim(), amount: document.getElementById('f-amount').value, date: document.getElementById('f-date').value, category: cat, note: document.getElementById('f-note').value.trim() });
+  const tags = document.getElementById('f-tags').value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
+  saveExpense({ title: document.getElementById('f-title').value.trim(), amount: document.getElementById('f-amount').value, date: document.getElementById('f-date').value, category: cat, note: document.getElementById('f-note').value.trim(), tags });
   closeModal();
 });
 
@@ -723,6 +734,7 @@ document.getElementById('budget-form').addEventListener('submit', e => {
 document.getElementById('search').addEventListener('input', renderExpensesList);
 document.getElementById('filter-category').addEventListener('change', renderExpensesList);
 document.getElementById('filter-month').addEventListener('change', renderExpensesList);
+document.getElementById('filter-tag').addEventListener('change', renderExpensesList);
 document.getElementById('date-from').addEventListener('change', renderExpensesList);
 document.getElementById('date-to').addEventListener('change', renderExpensesList);
 
@@ -1077,3 +1089,124 @@ Chart.defaults.plugins.tooltip.titleFont        = { family: 'Inter', weight: '70
 Chart.defaults.plugins.tooltip.bodyFont         = { family: 'Inter', size: 12 };
 Chart.defaults.animation.duration               = 800;
 Chart.defaults.animation.easing                 = 'easeInOutQuart';
+
+// ===================== TAGS =====================
+function renderTagChipsPreview(tags) {
+  const wrap = document.getElementById('tag-chips-preview');
+  wrap.innerHTML = tags.map(t => `<span class="tag-chip-item">#${t}<span class="tag-remove" data-tag="${t}">&times;</span></span>`).join('');
+  wrap.querySelectorAll('.tag-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cur = document.getElementById('f-tags').value.split(',').map(x=>x.trim()).filter(Boolean);
+      const updated = cur.filter(x => x !== btn.dataset.tag);
+      document.getElementById('f-tags').value = updated.join(',');
+      renderTagChipsPreview(updated);
+    });
+  });
+}
+
+document.getElementById('f-tags-input').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ',') return;
+  e.preventDefault();
+  const val = e.target.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g,'');
+  if (!val) return;
+  const cur = document.getElementById('f-tags').value.split(',').map(x=>x.trim()).filter(Boolean);
+  if (!cur.includes(val) && cur.length < 5) {
+    cur.push(val);
+    document.getElementById('f-tags').value = cur.join(',');
+    renderTagChipsPreview(cur);
+  }
+  e.target.value = '';
+});
+
+document.getElementById('tag-input-wrap').addEventListener('click', () => document.getElementById('f-tags-input').focus());
+
+function renderTagFilter() {
+  const allTags = [...new Set(expenses.flatMap(e => e.tags||[]))].sort();
+  const sel = document.getElementById('filter-tag');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Tags</option>' + allTags.map(t => `<option value="${t}" ${t===cur?'selected':''}>#${t}</option>`).join('');
+}
+
+function filterByTag(tag) {
+  document.querySelector('.nav-link[data-page="expenses"]').click();
+  document.getElementById('filter-tag').value = tag;
+  renderExpensesList();
+  toast(`Filtered by #${tag}`, 'info');
+}
+
+// ===================== REPORT CARD =====================
+function getGrade(pct) {
+  if (pct === null) return { grade: 'N/A', cls: 'NA', label: 'No Budget' };
+  if (pct <= 70)  return { grade: 'A', cls: 'A', label: 'Excellent' };
+  if (pct <= 90)  return { grade: 'B', cls: 'B', label: 'Good' };
+  if (pct <= 100) return { grade: 'C', cls: 'C', label: 'Warning' };
+  return { grade: 'D', cls: 'D', label: 'Over Budget' };
+}
+
+function renderReportCard() {
+  // Populate month selector
+  const sel = document.getElementById('report-month-select');
+  const months = [...new Set(expenses.map(e=>e.date.slice(0,7)))].sort().reverse();
+  const now = new Date();
+  const curYM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  if (!months.includes(curYM)) months.unshift(curYM);
+
+  const prevVal = sel.value;
+  sel.innerHTML = months.map(m => {
+    const [y,mo] = m.split('-');
+    return `<option value="${m}" ${m===(prevVal||curYM)?'selected':''}>${new Date(y,mo-1).toLocaleString('default',{month:'long',year:'numeric'})}</option>`;
+  }).join('');
+
+  const ym = sel.value || curYM;
+  const monthExp = expenses.filter(e => e.date.startsWith(ym));
+  const monthTotal = monthExp.reduce((s,e) => s+e.amount, 0);
+
+  if (!monthExp.length) {
+    document.getElementById('report-card-content').innerHTML = `<div class="report-empty">📅 No expenses for this month yet.</div>`;
+    return;
+  }
+
+  // Overall grade based on budgets
+  let overallPct = null;
+  if (budgets.length) {
+    const totalBudget = budgets.reduce((s,b) => s+b.amount, 0);
+    overallPct = totalBudget > 0 ? (monthTotal / totalBudget * 100) : null;
+  }
+  const overall = getGrade(overallPct);
+
+  // Per-category rows
+  const catTotals = getCatTotals(monthExp);
+  const catRows = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).map(([cat, spent]) => {
+    const budget = budgets.find(b => b.category === cat);
+    const pct = budget ? (spent / budget.amount * 100) : null;
+    const g = getGrade(pct);
+    const pctStr = pct !== null ? `${pct.toFixed(0)}% of budget` : 'No budget set';
+    return `<div class="report-cat-row">
+      <span class="report-cat-name">${ICONS[cat]||'📦'} ${cat}</span>
+      <span style="font-size:12px;color:var(--text3);flex:1;text-align:right;margin-right:10px">${fmt(spent)} &nbsp;·&nbsp; ${pctStr}</span>
+      <span class="report-cat-badge badge-${g.cls}">${g.grade}</span>
+    </div>`;
+  }).join('');
+
+  const prevYM = (() => { const d = new Date(ym.split('-')[0], parseInt(ym.split('-')[1])-2, 1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
+  const prevTotal = expenses.filter(e=>e.date.startsWith(prevYM)).reduce((s,e)=>s+e.amount,0);
+  const vsLast = prevTotal > 0 ? `${((monthTotal-prevTotal)/prevTotal*100).toFixed(0)}% vs last month` : 'First month';
+  const vsLastColor = monthTotal <= prevTotal ? 'var(--green)' : 'var(--red)';
+
+  document.getElementById('report-card-content').innerHTML = `
+    <div class="report-card-grid">
+      <div class="report-grade-circle report-grade-${overall.cls}">
+        <span>${overall.grade}</span>
+        <span class="report-grade-label">${overall.label}</span>
+      </div>
+      <div class="report-stats">
+        <div class="report-stat-row"><span class="report-stat-label">💸 Total Spent</span><span class="report-stat-val">${fmt(monthTotal)}</span></div>
+        <div class="report-stat-row"><span class="report-stat-label">📅 Transactions</span><span class="report-stat-val">${monthExp.length}</span></div>
+        <div class="report-stat-row"><span class="report-stat-label">📈 vs Last Month</span><span class="report-stat-val" style="color:${vsLastColor}">${vsLast}</span></div>
+        ${overallPct !== null ? `<div class="report-stat-row"><span class="report-stat-label">🎯 Budget Used</span><span class="report-stat-val">${overallPct.toFixed(0)}%</span></div>` : ''}
+      </div>
+    </div>
+    <div class="report-cat-rows">${catRows}</div>`;
+}
+
+document.getElementById('report-month-select').addEventListener('change', renderReportCard);
