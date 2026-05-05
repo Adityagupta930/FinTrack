@@ -1,7 +1,18 @@
 let expenses = [], recurring = [], budgets = [];
 let barChart, pieChart, lineChart, doughnutChart;
 
-const KEYS = { expenses: 'ft_expenses', recurring: 'ft_recurring', budgets: 'ft_budgets', theme: 'ft_theme' };
+const KEYS = { theme: 'ft_theme' };
+
+// ===================== API =====================
+async function api(method, path, body) {
+  const res = await fetch(path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'API error'); }
+  return method === 'DELETE' ? null : res.json();
+}
 const ICONS = { Food:'🍔', Transport:'🚗', Shopping:'🛍️', Entertainment:'🎬', Health:'💊', Education:'📚', Bills:'💡', Other:'📦' };
 const COLORS = ['#6c63ff','#10b981','#f59e0b','#ec4899','#ef4444','#8b5cf6','#06b6d4','#f97316'];
 
@@ -44,53 +55,65 @@ function toast(msg, type = 'success') {
 }
 
 // ===================== STORAGE =====================
-function load() {
-  expenses  = JSON.parse(localStorage.getItem(KEYS.expenses)  || '[]');
-  recurring = JSON.parse(localStorage.getItem(KEYS.recurring) || '[]');
-  budgets   = JSON.parse(localStorage.getItem(KEYS.budgets)   || '[]');
-  processRecurring();
-  render();
+async function load() {
+  try {
+    [expenses, recurring, budgets] = await Promise.all([
+      api('GET', '/api/expenses'),
+      api('GET', '/api/recurring'),
+      api('GET', '/api/budgets')
+    ]);
+    // normalize field names from supabase (snake_case → camelCase)
+    recurring = recurring.map(r => ({ ...r, lastAdded: r.last_added || '', day: r.day }));
+    await processRecurring();
+    render();
+  } catch(e) {
+    toast('Failed to load data: ' + e.message, 'error');
+  }
 }
 
-function persist() {
-  localStorage.setItem(KEYS.expenses,  JSON.stringify(expenses));
-  localStorage.setItem(KEYS.recurring, JSON.stringify(recurring));
-  localStorage.setItem(KEYS.budgets,   JSON.stringify(budgets));
-}
+function persist() { /* data lives in Supabase now */ }
 
 // ===================== RECURRING =====================
-function processRecurring() {
+async function processRecurring() {
   const now = new Date();
   const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  recurring.forEach(r => {
-    if (r.lastAdded === ym) return;
+  for (const r of recurring) {
+    if (r.lastAdded === ym) continue;
     const day = Math.min(r.day, new Date(now.getFullYear(), now.getMonth()+1, 0).getDate());
     const date = `${ym}-${String(day).padStart(2,'0')}`;
-    expenses.unshift({ id: crypto.randomUUID(), title: r.title, amount: parseFloat(r.amount), category: r.category, date, note: r.note || '🔄 Recurring', createdAt: new Date().toISOString() });
-    r.lastAdded = ym;
-  });
-  persist();
-}
-
-function saveRecurring(data) {
-  const id = document.getElementById('r-id').value;
-  if (id) {
-    recurring = recurring.map(r => r.id === id ? { ...r, ...data, id } : r);
-    toast('Recurring updated!');
-  } else {
-    recurring.push({ id: crypto.randomUUID(), ...data, amount: parseFloat(data.amount), day: parseInt(data.day) });
-    toast('Recurring expense added! Will auto-add every month. 🔄');
+    try {
+      const newExp = await api('POST', '/api/expenses', { title: r.title, amount: r.amount, category: r.category, date, note: r.note || '🔄 Recurring', tags: [] });
+      expenses.unshift(newExp);
+      await api('PUT', `/api/recurring/${r.id}`, { ...r, last_added: ym });
+      r.lastAdded = ym;
+    } catch(e) { console.error('Recurring error:', e); }
   }
-  persist();
-  renderRecurring();
 }
 
-function deleteRecurring(id) {
+async function saveRecurring(data) {
+  const id = document.getElementById('r-id').value;
+  try {
+    if (id) {
+      const updated = await api('PUT', `/api/recurring/${id}`, { ...data, amount: parseFloat(data.amount), day: parseInt(data.day) });
+      recurring = recurring.map(r => r.id === id ? { ...updated, lastAdded: updated.last_added || '' } : r);
+      toast('Recurring updated!');
+    } else {
+      const created = await api('POST', '/api/recurring', { ...data, amount: parseFloat(data.amount), day: parseInt(data.day) });
+      recurring.unshift({ ...created, lastAdded: created.last_added || '' });
+      toast('Recurring expense added! Will auto-add every month. 🔄');
+    }
+    renderRecurring();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deleteRecurring(id) {
   if (!confirm('Delete this recurring expense?')) return;
-  recurring = recurring.filter(r => r.id !== id);
-  persist();
-  renderRecurring();
-  toast('Recurring expense deleted.', 'info');
+  try {
+    await api('DELETE', `/api/recurring/${id}`);
+    recurring = recurring.filter(r => r.id !== id);
+    renderRecurring();
+    toast('Recurring expense deleted.', 'info');
+  } catch(e) { toast(e.message, 'error'); }
 }
 
 function renderRecurring() {
@@ -129,21 +152,25 @@ function editRecurring(id) {
 }
 
 // ===================== BUDGET =====================
-function saveBudget(cat, amount) {
-  const idx = budgets.findIndex(b => b.category === cat);
-  if (idx > -1) budgets[idx].amount = parseFloat(amount);
-  else budgets.push({ category: cat, amount: parseFloat(amount) });
-  persist();
-  renderBudget();
-  checkBudgetAlerts();
-  toast(`Budget set for ${cat}!`);
+async function saveBudget(cat, amount) {
+  try {
+    const saved = await api('POST', '/api/budgets', { category: cat, amount: parseFloat(amount) });
+    const idx = budgets.findIndex(b => b.category === cat);
+    if (idx > -1) budgets[idx] = saved;
+    else budgets.unshift(saved);
+    renderBudget();
+    checkBudgetAlerts();
+    toast(`Budget set for ${cat}!`);
+  } catch(e) { toast(e.message, 'error'); }
 }
 
-function deleteBudget(cat) {
-  budgets = budgets.filter(b => b.category !== cat);
-  persist();
-  renderBudget();
-  toast('Budget removed.', 'info');
+async function deleteBudget(cat) {
+  try {
+    await api('DELETE', `/api/budgets/${cat}`);
+    budgets = budgets.filter(b => b.category !== cat);
+    renderBudget();
+    toast('Budget removed.', 'info');
+  } catch(e) { toast(e.message, 'error'); }
 }
 
 function checkBudgetAlerts() {
@@ -327,17 +354,20 @@ function updateReceipt() {
 
 // ===================== QUICK ADD =====================
 function initQuickAdd() {
-  document.getElementById('qa-submit').addEventListener('click', () => {
+  document.getElementById('qa-submit').addEventListener('click', async () => {
     const title  = document.getElementById('qa-title').value.trim();
     const amount = document.getElementById('qa-amount').value;
     const cat    = document.getElementById('qa-category').value;
     if (!title || !amount || !cat) { toast('Fill title, amount & category!', 'warning'); return; }
-    expenses.unshift({ id: crypto.randomUUID(), title, amount: parseFloat(amount), category: cat, date: new Date().toISOString().split('T')[0], note: '', createdAt: new Date().toISOString() });
-    persist(); render(); checkBudgetAlerts(); checkConfetti();
-    document.getElementById('qa-title').value = '';
-    document.getElementById('qa-amount').value = '';
-    document.getElementById('qa-category').value = '';
-    toast(`⚡ ${title} added!`);
+    try {
+      const created = await api('POST', '/api/expenses', { title, amount: parseFloat(amount), category: cat, date: new Date().toISOString().split('T')[0], note: '', tags: [] });
+      expenses.unshift(created);
+      render(); checkBudgetAlerts(); checkConfetti();
+      document.getElementById('qa-title').value = '';
+      document.getElementById('qa-amount').value = '';
+      document.getElementById('qa-category').value = '';
+      toast(`⚡ ${title} added!`);
+    } catch(e) { toast(e.message, 'error'); }
   });
   document.getElementById('qa-amount').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('qa-submit').click(); });
 }
@@ -393,27 +423,32 @@ function syncBottomNav(page) {
   document.querySelectorAll('.bottom-nav-item[data-page]').forEach(i => i.classList.toggle('active', i.dataset.page === page));
 }
 
-function saveExpense(data) {
+async function saveExpense(data) {
   const id = document.getElementById('expense-id').value;
-  if (id) {
-    expenses = expenses.map(e => e.id === id ? { ...e, ...data, id } : e);
-    toast('Expense updated!');
-  } else {
-    expenses.unshift({ id: crypto.randomUUID(), ...data, amount: parseFloat(data.amount), createdAt: new Date().toISOString() });
-    toast('Expense added!');
-  }
-  persist();
-  render();
-  checkBudgetAlerts();
-  checkConfetti();
+  try {
+    if (id) {
+      const updated = await api('PUT', `/api/expenses/${id}`, data);
+      expenses = expenses.map(e => e.id === id ? updated : e);
+      toast('Expense updated!');
+    } else {
+      const created = await api('POST', '/api/expenses', data);
+      expenses.unshift(created);
+      toast('Expense added!');
+    }
+    render();
+    checkBudgetAlerts();
+    checkConfetti();
+  } catch(e) { toast(e.message, 'error'); }
 }
 
-function deleteExpense(id) {
+async function deleteExpense(id) {
   if (!confirm('Delete this expense?')) return;
-  expenses = expenses.filter(e => e.id !== id);
-  persist();
-  render();
-  toast('Expense deleted.', 'info');
+  try {
+    await api('DELETE', `/api/expenses/${id}`);
+    expenses = expenses.filter(e => e.id !== id);
+    render();
+    toast('Expense deleted.', 'info');
+  } catch(e) { toast(e.message, 'error'); }
 }
 
 // ===================== EXPORT =====================
@@ -574,10 +609,16 @@ function renderExpensesList() {
   list.innerHTML = filtered.map(e => expenseHTML(e, true, search)).join('') || emptyHTML();
   document.querySelectorAll('.swipe-item').forEach(el => {
     initSwipe(el);
-    el.addEventListener('transitionend', () => {
+    el.addEventListener('transitionend', async () => {
       if (el.classList.contains('swiped')) {
         el.style.transition = 'opacity 0.3s'; el.style.opacity = '0';
-        setTimeout(() => { expenses = expenses.filter(e => e.id !== el.dataset.id); persist(); render(); toast('Expense deleted.', 'info'); }, 300);
+        setTimeout(async () => {
+          try {
+            await api('DELETE', `/api/expenses/${el.dataset.id}`);
+            expenses = expenses.filter(e => e.id !== el.dataset.id);
+            render(); toast('Expense deleted.', 'info');
+          } catch(e) { toast(e.message, 'error'); render(); }
+        }, 300);
       }
     });
   });
@@ -993,10 +1034,12 @@ function initContextMenu() {
     menu.style.top  = y + 'px';
 
     document.getElementById('ctx-edit').onclick   = () => { openEdit(ctxId); hideCtx(); };
-    document.getElementById('ctx-copy').onclick   = () => {
-      const copy = { ...exp, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-      expenses.unshift(copy); persist(); render();
-      toast('Expense duplicated!'); hideCtx();
+    document.getElementById('ctx-copy').onclick   = async () => {
+      try {
+        const copy = await api('POST', '/api/expenses', { title: exp.title, amount: exp.amount, category: exp.category, date: exp.date, note: exp.note, tags: exp.tags||[] });
+        expenses.unshift(copy); render();
+        toast('Expense duplicated!'); hideCtx();
+      } catch(e) { toast(e.message, 'error'); hideCtx(); }
     };
     document.getElementById('ctx-delete').onclick = () => { deleteExpense(ctxId); hideCtx(); };
   });

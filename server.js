@@ -1,62 +1,92 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'data', 'expenses.json');
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-function readData() {
-  try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  } catch {
-    return [];
-  }
-}
-
-function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
-
-// Get all expenses
-app.get('/api/expenses', (req, res) => {
-  res.json(readData());
+// ===================== EXPENSES =====================
+app.get('/api/expenses', async (req, res) => {
+  const { data, error } = await supabase.from('expenses').select('*').order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
-// Add expense
-app.post('/api/expenses', (req, res) => {
-  const { title, amount, category, date, note } = req.body;
-  if (!title || !amount || !category || !date) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-  const expense = { id: crypto.randomUUID(), title, amount: parseFloat(amount), category, date, note: note || '', createdAt: new Date().toISOString() };
-  const data = readData();
-  data.unshift(expense);
-  writeData(data);
-  res.status(201).json(expense);
+app.post('/api/expenses', async (req, res) => {
+  const { title, amount, category, date, note, tags } = req.body;
+  if (!title || !amount || !category || !date) return res.status(400).json({ error: 'Missing required fields' });
+  const { data, error } = await supabase.from('expenses').insert([{ title, amount: parseFloat(amount), category, date, note: note || '', tags: tags || [] }]).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data);
 });
 
-// Update expense
-app.put('/api/expenses/:id', (req, res) => {
-  const data = readData();
-  const index = data.findIndex(e => e.id === req.params.id);
-  if (index === -1) return res.status(404).json({ error: 'Not found' });
-  data[index] = { ...data[index], ...req.body, id: req.params.id };
-  writeData(data);
-  res.json(data[index]);
+app.put('/api/expenses/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, amount, category, date, note, tags } = req.body;
+  const { data, error } = await supabase.from('expenses').update({ title, amount: parseFloat(amount), category, date, note: note || '', tags: tags || [] }).eq('id', id).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
-// Delete expense
-app.delete('/api/expenses/:id', (req, res) => {
-  const data = readData();
-  const filtered = data.filter(e => e.id !== req.params.id);
-  if (filtered.length === data.length) return res.status(404).json({ error: 'Not found' });
-  writeData(filtered);
+app.delete('/api/expenses/:id', async (req, res) => {
+  const { error } = await supabase.from('expenses').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+// ===================== RECURRING =====================
+app.get('/api/recurring', async (req, res) => {
+  const { data, error } = await supabase.from('recurring').select('*').order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/api/recurring', async (req, res) => {
+  const { title, amount, category, day, note } = req.body;
+  if (!title || !amount || !category || !day) return res.status(400).json({ error: 'Missing required fields' });
+  const { data, error } = await supabase.from('recurring').insert([{ title, amount: parseFloat(amount), category, day: parseInt(day), note: note || '', last_added: '' }]).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data);
+});
+
+app.put('/api/recurring/:id', async (req, res) => {
+  const { title, amount, category, day, note, last_added } = req.body;
+  const { data, error } = await supabase.from('recurring').update({ title, amount: parseFloat(amount), category, day: parseInt(day), note: note || '', last_added: last_added || '' }).eq('id', req.params.id).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+app.delete('/api/recurring/:id', async (req, res) => {
+  const { error } = await supabase.from('recurring').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+// ===================== BUDGETS =====================
+app.get('/api/budgets', async (req, res) => {
+  const { data, error } = await supabase.from('budgets').select('*').order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/api/budgets', async (req, res) => {
+  const { category, amount } = req.body;
+  if (!category || !amount) return res.status(400).json({ error: 'Missing required fields' });
+  const { data, error } = await supabase.from('budgets').upsert([{ category, amount: parseFloat(amount) }], { onConflict: 'category' }).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data);
+});
+
+app.delete('/api/budgets/:category', async (req, res) => {
+  const { error } = await supabase.from('budgets').delete().eq('category', req.params.category);
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
