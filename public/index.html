@@ -187,6 +187,9 @@
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="text" id="search" placeholder="Search expenses..."/>
         </div>
+        <select id="filter-tag">
+          <option value="">All Tags</option>
+        </select>
         <select id="filter-category">
           <option value="">All Categories</option>
           <option value="Food">🍔 Food</option>
@@ -228,6 +231,16 @@
 
     <!-- Analytics -->
     <section id="page-analytics" class="page">
+      <!-- Monthly Report Card -->
+      <div class="glass-box" style="margin-bottom:16px">
+        <div class="box-header">
+          <span class="box-title">📋 Monthly Report Card</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="report-month-select" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:8px;font-size:13px;outline:none;font-family:'Inter',sans-serif;"></select>
+          </div>
+        </div>
+        <div id="report-card-content"></div>
+      </div>
       <div class="glass-box" style="margin-bottom:16px">
         <div class="box-header">
           <span class="box-title">Spending Trend</span>
@@ -306,6 +319,14 @@
         <div class="form-group">
           <label>Note <span style="color:var(--text3)">(optional)</span></label>
           <textarea id="f-note" placeholder="Add a note..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Tags <span style="color:var(--text3)">(optional)</span></label>
+          <div class="tag-input-wrap" id="tag-input-wrap">
+            <div id="tag-chips-preview"></div>
+            <input type="text" id="f-tags-input" placeholder="Type tag & press Enter..." autocomplete="off"/>
+          </div>
+          <input type="hidden" id="f-tags"/>
         </div>
         <!-- Live Receipt Preview -->
         <div class="receipt-preview" id="receipt-preview">
