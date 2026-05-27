@@ -30,20 +30,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const [e, i, r, b] = await Promise.all([
+      // Load each table independently so one missing table doesn't break everything
+      const results = await Promise.allSettled([
         api.expenses.list(),
         api.income.list(),
         api.recurring.list(),
         api.budgets.list(),
       ]);
-      setExpenses(e);
-      setIncome(i);
-      setRecurring(r);
-      setBudgets(b);
+
+      if (results[0].status === 'fulfilled') setExpenses(results[0].value);
+      if (results[1].status === 'fulfilled') setIncome(results[1].value);
+      if (results[2].status === 'fulfilled') setRecurring(results[2].value);
+      if (results[3].status === 'fulfilled') setBudgets(results[3].value);
+
+      // Show error only if ALL failed
+      const allFailed = results.every(r => r.status === 'rejected');
+      if (allFailed) {
+        const msg = (results[0] as PromiseRejectedResult).reason?.message || 'Failed to load';
+        setError(msg);
+      }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg);
-      console.error('Supabase error:', msg);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
