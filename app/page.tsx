@@ -1,65 +1,241 @@
-import Image from "next/image";
+'use client';
+import { useState } from 'react';
+import { useStore } from '@/lib/store';
+import { fmt, getYM, CATEGORY_ICONS, COLORS } from '@/lib/api';
+import {
+  IndianRupee, CalendarDays, Receipt,
+  Flame, CalendarRange, Scale, Plus, ArrowUpRight
+} from 'lucide-react';
+import ExpenseRow from '@/components/ExpenseRow';
+import ExpenseModal from '@/components/ExpenseModal';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
 
-export default function Home() {
+const Bar = dynamic(() => import('react-chartjs-2').then(m => m.Bar), { ssr: false });
+const Pie = dynamic(() => import('react-chartjs-2').then(m => m.Pie), { ssr: false });
+
+import {
+  Chart, CategoryScale, LinearScale, BarElement,
+  ArcElement, Tooltip, Legend
+} from 'chart.js';
+Chart.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+
+/* ── Stat Card ── */
+function Card({
+  label, value, sub, icon: Icon, iconBg, valueColor,
+}: {
+  label: string; value: string; sub: string;
+  icon: React.ElementType; iconBg: string; valueColor?: string;
+}) {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center justify-between shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">{label}</p>
+        <p className={`text-[20px] font-black tracking-tight truncate ${valueColor ?? 'text-gray-900'}`}>{value}</p>
+        <p className="text-[11px] text-gray-400 mt-1 truncate">{sub}</p>
+      </div>
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ml-4 ${iconBg}`}>
+        <Icon size={20} strokeWidth={2} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Section Box ── */
+function Box({ title, badge, action, children }: {
+  title: string; badge?: string;
+  action?: React.ReactNode; children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+        <div className="flex items-center gap-2.5">
+          <p className="text-[13px] font-bold text-gray-900">{title}</p>
+          {badge && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 bg-violet-50 text-violet-600 rounded-full">{badge}</span>
+          )}
+        </div>
+        {action}
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  );
+}
+
+/* ── Skeleton ── */
+function Skeleton() {
+  return (
+    <div className="animate-pulse space-y-4">
+      <div className="grid grid-cols-3 gap-4">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="h-24 bg-gray-100 rounded-2xl" />
+        ))}
+      </div>
+      <div className="grid grid-cols-5 gap-4">
+        <div className="col-span-3 h-64 bg-gray-100 rounded-2xl" />
+        <div className="col-span-2 h-64 bg-gray-100 rounded-2xl" />
+      </div>
+      <div className="h-64 bg-gray-100 rounded-2xl" />
+    </div>
+  );
+}
+
+/* ── Page ── */
+export default function DashboardPage() {
+  const { expenses, income, loading, error } = useStore();
+  const [modalOpen, setModalOpen] = useState(false);
+  const ym = getYM();
+
+  const totalSpent  = expenses.reduce((s, e) => s + e.amount, 0);
+  const monthSpent  = expenses.filter(e => e.date.startsWith(ym)).reduce((s, e) => s + e.amount, 0);
+  const monthIncome = income.filter(i => i.date.startsWith(ym)).reduce((s, i) => s + i.amount, 0);
+  const netBalance  = monthIncome - monthSpent;
+
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 6);
+  const weekStr = weekAgo.toISOString().split('T')[0];
+  const weekSpent = expenses.filter(e => e.date >= weekStr).reduce((s, e) => s + e.amount, 0);
+
+  const catTotals = expenses.reduce((acc, e) => {
+    acc[e.category] = (acc[e.category] || 0) + e.amount; return acc;
+  }, {} as Record<string, number>);
+  const topCat = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
+
+  // Bar chart — last 6 months
+  const months: string[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(); d.setMonth(d.getMonth() - i);
+    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  const barLabels = months.map(m => new Date(m + '-01').toLocaleString('default', { month: 'short' }));
+  const barData   = months.map(m => expenses.filter(e => e.date.startsWith(m)).reduce((s, e) => s + e.amount, 0));
+
+  const pieLabels = Object.keys(catTotals);
+  const pieData   = pieLabels.map(c => catTotals[c]);
+
+  if (loading) return <Skeleton />;
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <span className="text-4xl">⚠️</span>
+      <p className="text-red-500 font-semibold text-sm">Supabase Error</p>
+      <p className="text-gray-500 text-xs max-w-md text-center bg-red-50 px-4 py-2 rounded-xl border border-red-100">{error}</p>
+      <p className="text-gray-400 text-xs">Check Supabase RLS policies and table names.</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-[22px] font-black text-gray-900 tracking-tight">Dashboard</h1>
+          <p className="text-[13px] text-gray-400 mt-0.5">
+            {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+        <button
+          onClick={() => setModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-violet-200"
+        >
+          <Plus size={15} strokeWidth={2.5} /> Add Expense
+        </button>
+      </div>
+
+      {/* ── Stat Cards ── */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card label="Total Spent"   value={fmt(totalSpent)}  sub="All time"
+          icon={IndianRupee} iconBg="bg-violet-50 text-violet-600" />
+        <Card label="This Month"    value={fmt(monthSpent)}  sub={new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
+          icon={CalendarDays} iconBg="bg-emerald-50 text-emerald-600" />
+        <Card label="Transactions"  value={String(expenses.length)} sub="Total entries"
+          icon={Receipt} iconBg="bg-amber-50 text-amber-600" />
+        <Card label="Top Category"  value={topCat ? `${CATEGORY_ICONS[topCat[0]] || '📦'} ${topCat[0]}` : '—'} sub="Highest spend"
+          icon={Flame} iconBg="bg-pink-50 text-pink-500" />
+        <Card label="This Week"     value={fmt(weekSpent)}   sub="Last 7 days"
+          icon={CalendarRange} iconBg="bg-cyan-50 text-cyan-600" />
+        <Card
+          label="Net Balance"
+          value={(netBalance >= 0 ? '+' : '') + fmt(netBalance)}
+          sub={`${fmt(monthIncome)} income this month`}
+          icon={Scale}
+          iconBg={netBalance >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}
+          valueColor={netBalance >= 0 ? 'text-emerald-600' : 'text-red-500'}
+        />
+      </div>
+
+      {/* ── Charts ── */}
+      <div className="grid grid-cols-5 gap-4">
+        <div className="col-span-3">
+          <Box title="Monthly Spending" badge="Last 6 months">
+            <Bar
+              data={{
+                labels: barLabels,
+                datasets: [{
+                  data: barData,
+                  backgroundColor: 'rgba(109,99,255,0.85)',
+                  hoverBackgroundColor: '#6c63ff',
+                  borderRadius: 7,
+                  borderSkipped: false,
+                }],
+              }}
+              options={{
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + fmt(ctx.parsed.y) } } },
+                scales: {
+                  x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11 }, color: '#9ca3af' } },
+                  y: { grid: { color: '#f3f4f6' }, border: { display: false }, ticks: { font: { size: 11 }, color: '#9ca3af', callback: v => '₹' + Number(v).toLocaleString('en-IN') } },
+                },
+                maintainAspectRatio: true,
+              }}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </Box>
         </div>
-      </main>
+
+        <div className="col-span-2">
+          <Box title="By Category">
+            {pieLabels.length > 0 ? (
+              <Pie
+                data={{
+                  labels: pieLabels,
+                  datasets: [{ data: pieData, backgroundColor: COLORS, borderWidth: 3, borderColor: '#fff' }],
+                }}
+                options={{
+                  plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 }, color: '#6b7280', padding: 12 } },
+                    tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${fmt(ctx.parsed)}` } },
+                  },
+                }}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-40 text-gray-300">
+                <span className="text-4xl mb-2">📊</span>
+                <p className="text-[12px]">No data yet</p>
+              </div>
+            )}
+          </Box>
+        </div>
+      </div>
+
+      {/* ── Recent Transactions ── */}
+      <Box
+        title="Recent Transactions"
+        action={
+          <Link href="/expenses" className="flex items-center gap-1 text-[12px] text-violet-600 hover:text-violet-700 font-semibold transition">
+            View all <ArrowUpRight size={13} />
+          </Link>
+        }
+      >
+        {expenses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-gray-300">
+            <span className="text-4xl mb-2">💸</span>
+            <p className="text-[13px]">No expenses yet. Add your first one!</p>
+          </div>
+        ) : (
+          expenses.slice(0, 6).map(e => <ExpenseRow key={e.id} item={e} />)
+        )}
+      </Box>
+
+      <ExpenseModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 }
