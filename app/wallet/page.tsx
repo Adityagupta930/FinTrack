@@ -169,7 +169,7 @@ export default function WalletPage() {
                       </span>
                     </div>
                     <p className="text-[11px] text-gray-400 mt-0.5">
-                      {new Date(t.created_at!).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {new Date(t.created_at!).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {new Date(t.created_at!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
                       {t.note ? ` · ${t.note}` : ''}
                     </p>
                   </div>

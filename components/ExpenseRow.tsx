@@ -18,9 +18,16 @@ interface Props {
 export default function ExpenseRow({ item, type = 'expense', onEdit, onDelete }: Props) {
   const icons  = type === 'income' ? INCOME_ICONS : CATEGORY_ICONS;
   const icon   = icons[item.category] || '📦';
+
   const dateStr = new Date(item.date + 'T00:00:00').toLocaleDateString('en-IN', {
     day: 'numeric', month: 'short', year: 'numeric',
   });
+
+  const timeStr = (item as { created_at?: string }).created_at
+    ? new Date((item as { created_at?: string }).created_at!).toLocaleTimeString('en-IN', {
+        hour: '2-digit', minute: '2-digit', hour12: true,
+      })
+    : null;
 
   return (
     <div className="group flex items-center justify-between py-3 px-3 -mx-3 rounded-xl hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
@@ -45,7 +52,7 @@ export default function ExpenseRow({ item, type = 'expense', onEdit, onDelete }:
             )}
           </div>
           <p className="text-[11px] text-gray-400 mt-0.5 truncate">
-            {item.category} · {dateStr}{item.note ? ` · ${item.note}` : ''}
+            {item.category} · {dateStr}{timeStr ? ` · ${timeStr}` : ''}{item.note ? ` · ${item.note}` : ''}
           </p>
         </div>
       </div>

@@ -107,6 +107,11 @@ export default function RecurringPage() {
                       {r.category} · Every month on day <span className="font-semibold text-gray-600">{r.day}</span>
                       {r.note ? ` · ${r.note}` : ''}
                     </p>
+                    {(r as { created_at?: string }).created_at && (
+                      <p className="text-[10px] text-gray-300 mt-0.5">
+                        Added {new Date((r as { created_at?: string }).created_at!).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {new Date((r as { created_at?: string }).created_at!).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0 ml-3">

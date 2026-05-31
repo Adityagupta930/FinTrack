@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import CategoryPicker from './CategoryPicker';
-import { Label, Input, AmountInput, Textarea, FormActions } from './ui';
+import { Label, Input, AmountInput, DatePicker, Textarea, FormActions } from './ui';
 import { api, Expense } from '@/lib/api';
 import { useStore } from '@/lib/store';
 import { Banknote, Smartphone } from 'lucide-react';
@@ -96,7 +96,7 @@ export default function ExpenseModal({ open, onClose, editing }: Props) {
           </div>
           <div>
             <Label>Date</Label>
-            <Input required type="date" value={date} onChange={e => setDate(e.target.value)} />
+            <DatePicker value={date} onChange={setDate} />
           </div>
         </div>
 

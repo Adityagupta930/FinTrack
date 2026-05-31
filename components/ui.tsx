@@ -1,4 +1,5 @@
 // Shared small UI primitives
+import { CalendarDays } from 'lucide-react';
 
 export function Label({ children }: { children: React.ReactNode }) {
   return (
@@ -26,6 +27,27 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
       className={`w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-gray-900 outline-none placeholder-gray-400
         focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-500/10 transition-all resize-none ${props.className ?? ''}`}
     />
+  );
+}
+
+export function DatePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const display = value
+    ? new Date(value + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    : 'Select date';
+  return (
+    <div className="relative">
+      <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/10 focus-within:bg-white transition-all">
+        <span className="pl-3 pr-2 py-2.5 flex-shrink-0 text-gray-400"><CalendarDays size={14} /></span>
+        <span className="flex-1 py-2.5 text-[13px] text-gray-900 select-none">{display}</span>
+        <input
+          type="date"
+          required
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+        />
+      </div>
+    </div>
   );
 }
 

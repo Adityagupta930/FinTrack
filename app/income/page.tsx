@@ -5,7 +5,7 @@ import { api, Income, INCOME_CATEGORIES, INCOME_ICONS, fmt, getYM } from '@/lib/
 import ExpenseRow from '@/components/ExpenseRow';
 import Modal from '@/components/Modal';
 import CategoryPicker from '@/components/CategoryPicker';
-import { Label, Input, AmountInput, Textarea, FormActions } from '@/components/ui';
+import { Label, Input, AmountInput, DatePicker, Textarea, FormActions } from '@/components/ui';
 import { Plus, Wallet, Banknote, Smartphone } from 'lucide-react';
 
 function IncomeModal({ open, onClose, editing }: { open: boolean; onClose: () => void; editing?: Income | null }) {
@@ -73,7 +73,7 @@ function IncomeModal({ open, onClose, editing }: { open: boolean; onClose: () =>
           </div>
           <div>
             <Label>Date</Label>
-            <Input required type="date" value={date} onChange={e => setDate(e.target.value)} />
+            <DatePicker value={date} onChange={setDate} />
           </div>
         </div>
         <div>
