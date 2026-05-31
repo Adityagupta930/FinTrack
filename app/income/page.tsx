@@ -6,29 +6,37 @@ import ExpenseRow from '@/components/ExpenseRow';
 import Modal from '@/components/Modal';
 import CategoryPicker from '@/components/CategoryPicker';
 import { Label, Input, AmountInput, Textarea, FormActions } from '@/components/ui';
-import { Plus, Wallet } from 'lucide-react';
+import { Plus, Wallet, Banknote, Smartphone } from 'lucide-react';
 
 function IncomeModal({ open, onClose, editing }: { open: boolean; onClose: () => void; editing?: Income | null }) {
-  const { income, setIncome } = useStore();
-  const [title, setTitle]       = useState(editing?.title || '');
-  const [amount, setAmount]     = useState(editing?.amount?.toString() || '');
-  const [date, setDate]         = useState(editing?.date || new Date().toISOString().split('T')[0]);
-  const [category, setCategory] = useState(editing?.category || '');
-  const [note, setNote]         = useState(editing?.note || '');
-  const [loading, setLoading]   = useState(false);
+  const { income, setIncome, wallets, setWallets } = useStore();
+  const [title, setTitle]             = useState(editing?.title || '');
+  const [amount, setAmount]           = useState(editing?.amount?.toString() || '');
+  const [date, setDate]               = useState(editing?.date || new Date().toISOString().split('T')[0]);
+  const [category, setCategory]       = useState(editing?.category || '');
+  const [note, setNote]               = useState(editing?.note || '');
+  const [paymentMode, setPaymentMode] = useState<'cash'|'online'>(editing?.payment_mode || 'cash');
+  const [loading, setLoading]         = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!category) return;
     setLoading(true);
     try {
-      const data = { title, amount: parseFloat(amount), category, date, note };
+      const amt  = parseFloat(amount);
+      const data = { title, amount: amt, category, date, note, payment_mode: paymentMode };
       if (editing) {
         const updated = await api.income.update(editing.id, data);
         setIncome(income.map(i => i.id === editing.id ? updated : i));
       } else {
         const created = await api.income.create(data);
         setIncome([created, ...income]);
+        // add to wallet
+        const wallet = wallets.find(w => w.type === paymentMode);
+        if (wallet) {
+          const updWallet = await api.wallets.update(paymentMode, wallet.balance + amt);
+          setWallets(wallets.map(w => w.type === paymentMode ? updWallet : w));
+        }
       }
       onClose();
     } finally { setLoading(false); }
@@ -54,6 +62,23 @@ function IncomeModal({ open, onClose, editing }: { open: boolean; onClose: () =>
         <div>
           <Label>Category</Label>
           <CategoryPicker value={category} onChange={setCategory} categories={INCOME_CATEGORIES} icons={INCOME_ICONS} />
+        </div>
+        <div>
+          <Label>Payment Mode</Label>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setPaymentMode('cash')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[13px] font-semibold transition-all ${
+                paymentMode === 'cash' ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-200' : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-amber-300'
+              }`}>
+              <Banknote size={15} /> Cash
+            </button>
+            <button type="button" onClick={() => setPaymentMode('online')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[13px] font-semibold transition-all ${
+                paymentMode === 'online' ? 'bg-violet-600 border-violet-600 text-white shadow-md shadow-violet-200' : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-violet-300'
+              }`}>
+              <Smartphone size={15} /> Online
+            </button>
+          </div>
         </div>
         <div>
           <Label>Note <span className="text-gray-400 normal-case font-normal">(optional)</span></Label>

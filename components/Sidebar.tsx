@@ -3,13 +3,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Wallet, BarChart2, Target,
-  TrendingUp, RefreshCw, Zap
+  TrendingUp, RefreshCw, Zap, WalletCards
 } from 'lucide-react';
 
 const links = [
   { href: '/',           label: 'Dashboard', icon: LayoutDashboard },
   { href: '/expenses',   label: 'Expenses',  icon: Wallet },
   { href: '/income',     label: 'Income',    icon: TrendingUp },
+  { href: '/wallet',     label: 'Wallet',    icon: WalletCards },
   { href: '/recurring',  label: 'Recurring', icon: RefreshCw },
   { href: '/analytics',  label: 'Analytics', icon: BarChart2 },
   { href: '/budget',     label: 'Budget',    icon: Target },

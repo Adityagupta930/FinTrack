@@ -58,7 +58,7 @@ function MobileNav() {
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-lg z-50 flex items-center justify-around px-2 py-2">
       <MobileNavItem href="/" icon="🏠" label="Home" />
       <MobileNavItem href="/expenses" icon="💸" label="Expenses" />
-      <MobileNavItem href="/income" icon="💰" label="Income" />
+      <MobileNavItem href="/wallet" icon="👛" label="Wallet" />
       <MobileNavItem href="/analytics" icon="📊" label="Analytics" />
       <MobileNavItem href="/budget" icon="🎯" label="Budget" />
     </nav>
