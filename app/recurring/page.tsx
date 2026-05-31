@@ -38,7 +38,7 @@ export default function RecurringPage() {
         const created = await api.recurring.create({ ...data, last_added: '' });
         setRecurring([created, ...recurring]);
       }
-      setOpen(false);
+      setOpen(false); setTitle(''); setAmount(''); setDay('1'); setCategory(''); setNote('');
     } finally { setLoading(false); }
   }
 

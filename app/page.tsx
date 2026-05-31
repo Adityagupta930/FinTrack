@@ -4,7 +4,7 @@ import { useStore } from '@/lib/store';
 import { fmt, getYM, CATEGORY_ICONS, COLORS } from '@/lib/api';
 import {
   IndianRupee, CalendarDays, Receipt,
-  Flame, CalendarRange, Scale, Plus, ArrowUpRight
+  Flame, CalendarRange, Scale, Plus, ArrowUpRight, Banknote, Smartphone, Wallet
 } from 'lucide-react';
 import ExpenseRow from '@/components/ExpenseRow';
 import ExpenseModal from '@/components/ExpenseModal';
@@ -82,9 +82,13 @@ function Skeleton() {
 
 /* ── Page ── */
 export default function DashboardPage() {
-  const { expenses, income, loading, error } = useStore();
+  const { expenses, income, wallets, loading, error } = useStore();
   const [modalOpen, setModalOpen] = useState(false);
   const ym = getYM();
+
+  const cashWallet   = wallets.find(w => w.type === 'cash');
+  const onlineWallet = wallets.find(w => w.type === 'online');
+  const totalBalance = (cashWallet?.balance ?? 0) + (onlineWallet?.balance ?? 0);
 
   const totalSpent  = expenses.reduce((s, e) => s + e.amount, 0);
   const monthSpent  = expenses.filter(e => e.date.startsWith(ym)).reduce((s, e) => s + e.amount, 0);
@@ -162,6 +166,31 @@ export default function DashboardPage() {
           iconBg={netBalance >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}
           valueColor={netBalance >= 0 ? 'text-emerald-600' : 'text-red-500'}
         />
+      </div>
+
+      {/* ── Wallet Summary ── */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-2xl p-4 text-white shadow-sm flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Banknote size={18} /></div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">Cash</p>
+            <p className="text-[18px] font-black tracking-tight">{fmt(cashWallet?.balance ?? 0)}</p>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-violet-500 to-violet-600 rounded-2xl p-4 text-white shadow-sm flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Smartphone size={18} /></div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">Online</p>
+            <p className="text-[18px] font-black tracking-tight">{fmt(onlineWallet?.balance ?? 0)}</p>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl p-4 text-white shadow-sm flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Wallet size={18} /></div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">Total Wallet</p>
+            <p className="text-[18px] font-black tracking-tight">{fmt(totalBalance)}</p>
+          </div>
+        </div>
       </div>
 
       {/* ── Charts ── */}

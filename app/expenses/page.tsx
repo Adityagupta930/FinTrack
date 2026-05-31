@@ -7,11 +7,11 @@ import ExpenseModal from '@/components/ExpenseModal';
 import { Plus, Search, SlidersHorizontal } from 'lucide-react';
 
 export default function ExpensesPage() {
-  const { expenses, setExpenses } = useStore();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing]     = useState<Expense | null>(null);
-  const [search, setSearch]       = useState('');
-  const [catFilter, setCatFilter] = useState('');
+  const { expenses, setExpenses, adjustWallet } = useStore();
+  const [modalOpen, setModalOpen]   = useState(false);
+  const [editing, setEditing]       = useState<Expense | null>(null);
+  const [search, setSearch]         = useState('');
+  const [catFilter, setCatFilter]   = useState('');
   const [monthFilter, setMonthFilter] = useState('');
 
   const months = [...new Set(expenses.map(e => e.date.slice(0, 7)))].sort().reverse();
@@ -25,10 +25,14 @@ export default function ExpensesPage() {
 
   const totalFiltered = filtered.reduce((s, e) => s + e.amount, 0);
 
-  async function del(id: string) {
+  async function del(expense: Expense) {
     if (!confirm('Delete this expense?')) return;
-    await api.expenses.delete(id);
-    setExpenses(expenses.filter(e => e.id !== id));
+    await api.expenses.delete(expense.id);
+    setExpenses(expenses.filter(e => e.id !== expense.id));
+    // refund wallet
+    if (expense.payment_mode) {
+      await adjustWallet(expense.payment_mode, expense.amount);
+    }
   }
 
   function openEdit(e: Expense) { setEditing(e); setModalOpen(true); }
@@ -36,8 +40,6 @@ export default function ExpensesPage() {
 
   return (
     <div className="space-y-5">
-
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-black text-gray-900 tracking-tight">Expenses</h1>
@@ -54,11 +56,9 @@ export default function ExpensesPage() {
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2 flex-1 min-w-48 bg-gray-50 border border-gray-200 rounded-xl px-3 focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/10 transition-all">
             <Search size={13} className="text-gray-400 flex-shrink-0" />
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search expenses…"
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search expenses…"
               className="flex-1 py-2.5 bg-transparent text-[13px] outline-none text-gray-900 placeholder-gray-400" />
           </div>
-
           <div className="flex items-center gap-2">
             <SlidersHorizontal size={13} className="text-gray-400" />
             <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
@@ -66,7 +66,6 @@ export default function ExpensesPage() {
               <option value="">All Categories</option>
               {cats.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-
             <select value={monthFilter} onChange={e => setMonthFilter(e.target.value)}
               className="px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] outline-none text-gray-700 focus:border-violet-500 transition cursor-pointer">
               <option value="">All Months</option>
@@ -76,7 +75,6 @@ export default function ExpensesPage() {
               })}
             </select>
           </div>
-
           {(search || catFilter || monthFilter) && (
             <div className="ml-auto flex items-center gap-2">
               <span className="text-[12px] text-gray-500">{filtered.length} results · <span className="font-semibold text-gray-900">₹{totalFiltered.toLocaleString('en-IN')}</span></span>
@@ -90,13 +88,9 @@ export default function ExpensesPage() {
       {/* List */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
         <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-          <p className="text-[13px] font-bold text-gray-900">
-            {filtered.length} {filtered.length === 1 ? 'expense' : 'expenses'}
-          </p>
+          <p className="text-[13px] font-bold text-gray-900">{filtered.length} {filtered.length === 1 ? 'expense' : 'expenses'}</p>
           {filtered.length > 0 && (
-            <p className="text-[12px] text-gray-400">
-              Total: <span className="font-bold text-gray-900">₹{totalFiltered.toLocaleString('en-IN')}</span>
-            </p>
+            <p className="text-[12px] text-gray-400">Total: <span className="font-bold text-gray-900">₹{totalFiltered.toLocaleString('en-IN')}</span></p>
           )}
         </div>
         <div className="px-5 py-2">
@@ -109,7 +103,7 @@ export default function ExpensesPage() {
             filtered.map(e => (
               <ExpenseRow key={e.id} item={e}
                 onEdit={() => openEdit(e)}
-                onDelete={() => del(e.id)} />
+                onDelete={() => del(e)} />
             ))
           )}
         </div>

@@ -7,7 +7,7 @@ import { Label, Input, AmountInput, FormActions } from '@/components/ui';
 import { Banknote, Smartphone, ArrowLeftRight, Plus, Minus, ArrowRight } from 'lucide-react';
 
 export default function WalletPage() {
-  const { wallets, setWallets, transfers, setTransfers, expenses, income } = useStore();
+  const { wallets, transfers, setTransfers, expenses, income, adjustWallet } = useStore();
 
   const cash   = wallets.find(w => w.type === 'cash');
   const online = wallets.find(w => w.type === 'online');
@@ -27,12 +27,9 @@ export default function WalletPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const amt    = parseFloat(addAmount);
-      const wallet = wallets.find(w => w.type === addType);
-      if (!wallet) return;
-      const newBal  = addMode === 'add' ? wallet.balance + amt : wallet.balance - amt;
-      const updated = await api.wallets.update(addType, newBal);
-      setWallets(wallets.map(w => w.type === addType ? updated : w));
+      const amt = parseFloat(addAmount);
+      const delta = addMode === 'add' ? amt : -amt;
+      await adjustWallet(addType, delta);
       setAddOpen(false); setAddAmount(''); setAddNote('');
     } finally { setLoading(false); }
   }
@@ -43,15 +40,9 @@ export default function WalletPage() {
     try {
       const amt    = parseFloat(transferAmt);
       const toType = fromType === 'cash' ? 'online' : 'cash';
-      const from   = wallets.find(w => w.type === fromType);
-      const to     = wallets.find(w => w.type === toType);
-      if (!from || !to) return;
-      const [updFrom, updTo] = await Promise.all([
-        api.wallets.update(fromType, from.balance - amt),
-        api.wallets.update(toType,   to.balance   + amt),
-      ]);
+      await adjustWallet(fromType, -amt);
+      await adjustWallet(toType, amt);
       const transfer = await api.transfers.create({ from_type: fromType, to_type: toType, amount: amt, note: transferNote });
-      setWallets(wallets.map(w => w.type === fromType ? updFrom : w.type === toType ? updTo : w));
       setTransfers([transfer, ...transfers]);
       setTransferOpen(false); setTransferAmt(''); setTransferNote('');
     } finally { setLoading(false); }

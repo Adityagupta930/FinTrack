@@ -3,38 +3,38 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { api, Expense, Income, Recurring, Budget, Wallet, Transfer } from '@/lib/api';
 
 interface Store {
-  expenses: Expense[];
-  income: Income[];
+  expenses:  Expense[];
+  income:    Income[];
   recurring: Recurring[];
-  budgets: Budget[];
-  wallets: Wallet[];
+  budgets:   Budget[];
+  wallets:   Wallet[];
   transfers: Transfer[];
-  loading: boolean;
-  error: string | null;
-  reload: () => Promise<void>;
-  setExpenses: (e: Expense[]) => void;
-  setIncome: (i: Income[]) => void;
+  loading:   boolean;
+  error:     string | null;
+  reload:    () => Promise<void>;
+  setExpenses:  (e: Expense[])  => void;
+  setIncome:    (i: Income[])   => void;
   setRecurring: (r: Recurring[]) => void;
-  setBudgets: (b: Budget[]) => void;
-  setWallets: (w: Wallet[]) => void;
+  setBudgets:   (b: Budget[])   => void;
+  setWallets:   (w: Wallet[])   => void;
   setTransfers: (t: Transfer[]) => void;
+  adjustWallet: (type: 'cash' | 'online', delta: number) => Promise<void>;
 }
 
 const Ctx = createContext<Store>({} as Store);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [expenses, setExpenses]   = useState<Expense[]>([]);
-  const [income, setIncome]       = useState<Income[]>([]);
+  const [expenses,  setExpenses]  = useState<Expense[]>([]);
+  const [income,    setIncome]    = useState<Income[]>([]);
   const [recurring, setRecurring] = useState<Recurring[]>([]);
-  const [budgets, setBudgets]     = useState<Budget[]>([]);
-  const [wallets, setWallets]     = useState<Wallet[]>([]);
+  const [budgets,   setBudgets]   = useState<Budget[]>([]);
+  const [wallets,   setWallets]   = useState<Wallet[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const results = await Promise.allSettled([
         api.expenses.list(),
@@ -50,7 +50,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (results[3].status === 'fulfilled') setBudgets(results[3].value);
       if (results[4].status === 'fulfilled') setWallets(results[4].value);
       if (results[5].status === 'fulfilled') setTransfers(results[5].value);
-
       const allFailed = results.every(r => r.status === 'rejected');
       if (allFailed) setError((results[0] as PromiseRejectedResult).reason?.message || 'Failed to load');
     } catch (err: unknown) {
@@ -60,6 +59,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Central wallet adjuster — use this everywhere
+  const adjustWallet = useCallback(async (type: 'cash' | 'online', delta: number) => {
+    return new Promise<void>(resolve => {
+      setWallets(prev => {
+        const wallet = prev.find(w => w.type === type);
+        if (!wallet) { resolve(); return prev; }
+        const newBal = wallet.balance + delta;
+        api.wallets.update(type, newBal).then(updated => {
+          setWallets(cur => cur.map(w => w.type === type ? updated : w));
+          resolve();
+        });
+        return prev.map(w => w.type === type ? { ...w, balance: newBal } : w);
+      });
+    });
+  }, []);
+
   useEffect(() => { reload(); }, [reload]);
 
   return (
@@ -67,6 +82,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       expenses, income, recurring, budgets, wallets, transfers,
       loading, error, reload,
       setExpenses, setIncome, setRecurring, setBudgets, setWallets, setTransfers,
+      adjustWallet,
     }}>
       {children}
     </Ctx.Provider>

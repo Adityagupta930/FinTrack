@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import CategoryPicker from './CategoryPicker';
 import { Label, Input, AmountInput, Textarea, FormActions } from './ui';
@@ -14,55 +14,65 @@ interface Props {
 }
 
 export default function ExpenseModal({ open, onClose, editing }: Props) {
-  const { setExpenses, expenses, wallets, setWallets } = useStore();
-  const [title, setTitle]             = useState(editing?.title || '');
-  const [amount, setAmount]           = useState(editing?.amount?.toString() || '');
-  const [date, setDate]               = useState(editing?.date || new Date().toISOString().split('T')[0]);
-  const [category, setCategory]       = useState(editing?.category || '');
-  const [note, setNote]               = useState(editing?.note || '');
-  const [paymentMode, setPaymentMode] = useState<'cash' | 'online'>(editing?.payment_mode || 'cash');
-  const [loading, setLoading]         = useState(false);
-  const [err, setErr]                 = useState('');
+  const { setExpenses, expenses, adjustWallet } = useStore();
+  const today = new Date().toISOString().split('T')[0];
+  const [title,       setTitle]       = useState('');
+  const [amount,      setAmount]      = useState('');
+  const [date,        setDate]        = useState(today);
+  const [category,    setCategory]    = useState('');
+  const [note,        setNote]        = useState('');
+  const [paymentMode, setPaymentMode] = useState<'cash' | 'online'>('cash');
+  const [loading,     setLoading]     = useState(false);
+  const [err,         setErr]         = useState('');
 
-  function reset() {
-    setTitle(editing?.title || '');
-    setAmount(editing?.amount?.toString() || '');
-    setDate(editing?.date || new Date().toISOString().split('T')[0]);
-    setCategory(editing?.category || '');
-    setNote(editing?.note || '');
-    setPaymentMode(editing?.payment_mode || 'cash');
-    setErr('');
+  // Sync form state whenever modal opens or editing changes
+  useEffect(() => {
+    if (open) {
+      setTitle(editing?.title || '');
+      setAmount(editing?.amount?.toString() || '');
+      setDate(editing?.date || today);
+      setCategory(editing?.category || '');
+      setNote(editing?.note || '');
+      setPaymentMode(editing?.payment_mode || 'cash');
+      setErr('');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editing]);
+
+  function handleClose() {
+    setTitle(''); setAmount(''); setDate(today);
+    setCategory(''); setNote(''); setPaymentMode('cash'); setErr('');
+    onClose();
   }
-
-  function handleClose() { reset(); onClose(); }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!category) { setErr('Please select a category'); return; }
     setLoading(true); setErr('');
     try {
-      const amt = parseFloat(amount);
+      const amt  = parseFloat(amount);
       const data = { title, amount: amt, category, date, note, tags: [] as string[], payment_mode: paymentMode };
 
       if (editing) {
         const updated = await api.expenses.update(editing.id, data);
         setExpenses(expenses.map(x => x.id === editing.id ? updated : x));
-        // adjust wallet balance
-        const diff = amt - editing.amount;
-        const wallet = wallets.find(w => w.type === paymentMode);
-        if (wallet) {
-          const updated = await api.wallets.update(paymentMode, wallet.balance - diff);
-          setWallets(wallets.map(w => w.type === paymentMode ? updated : w));
+
+        // Reverse old deduction, apply new deduction
+        const oldMode = editing.payment_mode || 'cash';
+        const oldAmt  = editing.amount;
+        if (oldMode === paymentMode) {
+          // same wallet — just adjust the diff
+          await adjustWallet(paymentMode, -(amt - oldAmt));
+        } else {
+          // different wallets — refund old, deduct new
+          await adjustWallet(oldMode, oldAmt);
+          await adjustWallet(paymentMode, -amt);
         }
       } else {
         const created = await api.expenses.create(data);
         setExpenses([created, ...expenses]);
         // deduct from wallet
-        const wallet = wallets.find(w => w.type === paymentMode);
-        if (wallet) {
-          const updated = await api.wallets.update(paymentMode, wallet.balance - amt);
-          setWallets(wallets.map(w => w.type === paymentMode ? updated : w));
-        }
+        await adjustWallet(paymentMode, -amt);
       }
       handleClose();
     } catch (e: unknown) {
@@ -90,7 +100,6 @@ export default function ExpenseModal({ open, onClose, editing }: Props) {
           </div>
         </div>
 
-        {/* Payment Mode */}
         <div>
           <Label>Payment Mode</Label>
           <div className="flex gap-2">

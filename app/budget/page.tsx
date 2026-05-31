@@ -127,7 +127,7 @@ export default function BudgetPage() {
       </div>
 
       {/* Modal */}
-      <Modal open={open} onClose={() => setOpen(false)} title="Set Budget" subtitle="Monthly spending limit per category">
+      <Modal open={open} onClose={() => { setOpen(false); setCategory(''); setAmount(''); }} title="Set Budget" subtitle="Monthly spending limit per category">
         <form onSubmit={submit} className="space-y-4">
           <div>
             <Label>Category</Label>
