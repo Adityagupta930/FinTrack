@@ -3,17 +3,18 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Wallet, BarChart2, Target,
-  TrendingUp, RefreshCw, Zap, WalletCards
+  TrendingUp, RefreshCw, Zap, WalletCards, LogOut
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const links = [
-  { href: '/',           label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/expenses',   label: 'Expenses',  icon: Wallet },
-  { href: '/income',     label: 'Income',    icon: TrendingUp },
-  { href: '/wallet',     label: 'Wallet',    icon: WalletCards },
-  { href: '/recurring',  label: 'Recurring', icon: RefreshCw },
-  { href: '/analytics',  label: 'Analytics', icon: BarChart2 },
-  { href: '/budget',     label: 'Budget',    icon: Target },
+  { href: '/',          label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/expenses',  label: 'Expenses',  icon: Wallet },
+  { href: '/income',    label: 'Income',    icon: TrendingUp },
+  { href: '/wallet',    label: 'Wallet',    icon: WalletCards },
+  { href: '/recurring', label: 'Recurring', icon: RefreshCw },
+  { href: '/analytics', label: 'Analytics', icon: BarChart2 },
+  { href: '/budget',    label: 'Budget',    icon: Target },
 ];
 
 export default function Sidebar() {
@@ -40,15 +41,10 @@ export default function Sidebar() {
         {links.map(({ href, label, icon: Icon }) => {
           const active = path === href;
           return (
-            <Link
-              key={href}
-              href={href}
+            <Link key={href} href={href}
               className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 ${
-                active
-                  ? 'bg-violet-50 text-violet-700'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
-              }`}
-            >
+                active ? 'bg-violet-50 text-violet-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+              }`}>
               <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${
                 active
                   ? 'bg-violet-600 text-white shadow-md shadow-violet-200'
@@ -57,18 +53,16 @@ export default function Sidebar() {
                 <Icon size={14} strokeWidth={active ? 2.5 : 2} />
               </div>
               <span>{label}</span>
-              {active && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-500" />
-              )}
+              {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-500" />}
             </Link>
           );
         })}
       </nav>
 
-      {/* User */}
-      <div className="px-4 py-4 border-t border-gray-100 flex-shrink-0">
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-violet-400 flex items-center justify-center text-white text-[11px] font-black flex-shrink-0 shadow-sm">
+      {/* Footer */}
+      <div className="px-4 py-4 border-t border-gray-100 flex-shrink-0 space-y-1">
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gray-50">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-violet-400 flex items-center justify-center text-white text-[11px] font-black flex-shrink-0">
             FT
           </div>
           <div className="min-w-0">
@@ -76,6 +70,10 @@ export default function Sidebar() {
             <p className="text-[11px] text-gray-400">Personal Account</p>
           </div>
         </div>
+        <button onClick={() => supabase.auth.signOut()}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium text-gray-500 hover:bg-red-50 hover:text-red-500 transition-all">
+          <LogOut size={14} /> Sign Out
+        </button>
       </div>
     </aside>
   );
