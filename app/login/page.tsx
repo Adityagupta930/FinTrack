@@ -9,12 +9,20 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
+  const [mode, setMode]         = useState<'login' | 'signup'>('login');
+  const [success, setSuccess]   = useState('');
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true); setError('');
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
+    setLoading(true); setError(''); setSuccess('');
+    if (mode === 'login') {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setError(error.message);
+    } else {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) setError(error.message);
+      else setSuccess('Account created! Check your email to confirm, then sign in.');
+    }
     setLoading(false);
   }
 
@@ -30,8 +38,12 @@ export default function LoginPage() {
           </span>
         </div>
 
-        <h1 className="text-[20px] font-black text-gray-900 mb-1">Welcome back</h1>
-        <p className="text-[13px] text-gray-400 mb-6">Sign in to your account</p>
+        <h1 className="text-[20px] font-black text-gray-900 mb-1">
+          {mode === 'login' ? 'Welcome back' : 'Create account'}
+        </h1>
+        <p className="text-[13px] text-gray-400 mb-6">
+          {mode === 'login' ? 'Sign in to your account' : 'Start tracking your finances'}
+        </p>
 
         <form onSubmit={submit} className="space-y-4">
           <div>
@@ -54,16 +66,25 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2.5 text-[12px] text-red-600 font-medium">
-              {error}
-            </div>
+            <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2.5 text-[12px] text-red-600 font-medium">{error}</div>
+          )}
+          {success && (
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5 text-[12px] text-emerald-700 font-medium">{success}</div>
           )}
 
           <button type="submit" disabled={loading}
             className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-violet-200 disabled:opacity-60 mt-2">
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading ? (mode === 'login' ? 'Signing in…' : 'Creating…') : (mode === 'login' ? 'Sign In' : 'Create Account')}
           </button>
         </form>
+
+        <p className="text-center text-[12px] text-gray-400 mt-5">
+          {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+          <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setSuccess(''); }}
+            className="text-violet-600 font-semibold hover:text-violet-700">
+            {mode === 'login' ? 'Sign Up' : 'Sign In'}
+          </button>
+        </p>
       </div>
     </div>
   );

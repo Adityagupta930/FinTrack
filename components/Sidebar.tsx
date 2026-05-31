@@ -6,6 +6,7 @@ import {
   TrendingUp, RefreshCw, Zap, WalletCards, LogOut
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth';
 
 const links = [
   { href: '/',          label: 'Dashboard', icon: LayoutDashboard },
@@ -19,6 +20,9 @@ const links = [
 
 export default function Sidebar() {
   const path = usePathname();
+  const { user } = useAuth();
+  const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'FT';
+  const email    = user?.email ?? 'Personal Account';
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-60 bg-white border-r border-gray-100 flex flex-col z-40 shadow-sm">
@@ -63,11 +67,11 @@ export default function Sidebar() {
       <div className="px-4 py-4 border-t border-gray-100 flex-shrink-0 space-y-1">
         <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gray-50">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-violet-400 flex items-center justify-center text-white text-[11px] font-black flex-shrink-0">
-            FT
+            {initials}
           </div>
           <div className="min-w-0">
             <p className="text-[12px] font-bold text-gray-800 truncate">FinTrack</p>
-            <p className="text-[11px] text-gray-400">Personal Account</p>
+            <p className="text-[11px] text-gray-400 truncate">{email}</p>
           </div>
         </div>
         <button onClick={() => supabase.auth.signOut()}
