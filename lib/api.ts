@@ -12,7 +12,9 @@ export interface Income {
 }
 export interface Recurring {
   id: string; title: string; amount: number;
-  category: string; day: number; note?: string; last_added?: string;
+  category: string; day: number; note?: string;
+  last_added?: string; frequency?: 'daily' | 'monthly';
+  payment_mode?: 'cash' | 'online';
 }
 export interface Budget {
   id: string; category: string; amount: number;

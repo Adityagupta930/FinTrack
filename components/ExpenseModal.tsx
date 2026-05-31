@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import CategoryPicker from './CategoryPicker';
-import { Label, Input, AmountInput, DatePicker, Textarea, FormActions } from './ui';
+import { Label, AmountInput, DatePicker, Textarea, FormActions } from './ui';
 import { api, Expense } from '@/lib/api';
 import { useStore } from '@/lib/store';
 import { Banknote, Smartphone } from 'lucide-react';
@@ -25,7 +25,6 @@ export default function ExpenseModal({ open, onClose, editing }: Props) {
   const [loading,     setLoading]     = useState(false);
   const [err,         setErr]         = useState('');
 
-  // Sync form state whenever modal opens or editing changes
   useEffect(() => {
     if (open) {
       setTitle(editing?.title || '');
@@ -56,22 +55,17 @@ export default function ExpenseModal({ open, onClose, editing }: Props) {
       if (editing) {
         const updated = await api.expenses.update(editing.id, data);
         setExpenses(expenses.map(x => x.id === editing.id ? updated : x));
-
-        // Reverse old deduction, apply new deduction
         const oldMode = editing.payment_mode || 'cash';
         const oldAmt  = editing.amount;
         if (oldMode === paymentMode) {
-          // same wallet — just adjust the diff
           await adjustWallet(paymentMode, -(amt - oldAmt));
         } else {
-          // different wallets — refund old, deduct new
           await adjustWallet(oldMode, oldAmt);
           await adjustWallet(paymentMode, -amt);
         }
       } else {
         const created = await api.expenses.create(data);
         setExpenses([created, ...expenses]);
-        // deduct from wallet
         await adjustWallet(paymentMode, -amt);
       }
       handleClose();
@@ -87,40 +81,36 @@ export default function ExpenseModal({ open, onClose, editing }: Props) {
       <form onSubmit={submit} className="space-y-4">
         <div>
           <Label>Title</Label>
-          <Input required value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Lunch, Uber ride…" />
+          <input required value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Lunch, Uber ride…"
+            className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-gray-900 outline-none placeholder-gray-400 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-500/10 transition-all" />
         </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label>Amount (₹)</Label>
             <AmountInput value={amount} onChange={setAmount} />
           </div>
           <div>
-            <Label>Date</Label>
-            <DatePicker value={date} onChange={setDate} />
+            <Label>Payment Mode</Label>
+            <div className="flex gap-1.5">
+              <button type="button" onClick={() => setPaymentMode('cash')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-[12px] font-semibold transition-all ${
+                  paymentMode === 'cash' ? 'bg-amber-500 border-amber-500 text-white' : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-amber-300'
+                }`}>
+                <Banknote size={13} /> Cash
+              </button>
+              <button type="button" onClick={() => setPaymentMode('online')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-[12px] font-semibold transition-all ${
+                  paymentMode === 'online' ? 'bg-violet-600 border-violet-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-violet-300'
+                }`}>
+                <Smartphone size={13} /> Online
+              </button>
+            </div>
           </div>
         </div>
 
-        <div>
-          <Label>Payment Mode</Label>
-          <div className="flex gap-2">
-            <button type="button" onClick={() => setPaymentMode('cash')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[13px] font-semibold transition-all ${
-                paymentMode === 'cash'
-                  ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-200'
-                  : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-amber-300'
-              }`}>
-              <Banknote size={15} /> Cash
-            </button>
-            <button type="button" onClick={() => setPaymentMode('online')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[13px] font-semibold transition-all ${
-                paymentMode === 'online'
-                  ? 'bg-violet-600 border-violet-600 text-white shadow-md shadow-violet-200'
-                  : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-violet-300'
-              }`}>
-              <Smartphone size={15} /> Online
-            </button>
-          </div>
-        </div>
+        {/* Date with shortcuts */}
+        <DatePicker value={date} onChange={setDate} label="Date" />
 
         <div>
           <Label>Category</Label>

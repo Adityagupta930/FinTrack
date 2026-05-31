@@ -1,5 +1,4 @@
 // Shared small UI primitives
-import { CalendarDays } from 'lucide-react';
 
 export function Label({ children }: { children: React.ReactNode }) {
   return (
@@ -30,27 +29,6 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
   );
 }
 
-export function DatePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const display = value
-    ? new Date(value + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-    : 'Select date';
-  return (
-    <div className="relative">
-      <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/10 focus-within:bg-white transition-all">
-        <span className="pl-3 pr-2 py-2.5 flex-shrink-0 text-gray-400"><CalendarDays size={14} /></span>
-        <span className="flex-1 py-2.5 text-[13px] text-gray-900 select-none">{display}</span>
-        <input
-          type="date"
-          required
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-        />
-      </div>
-    </div>
-  );
-}
-
 export function AmountInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/10 focus-within:bg-white transition-all">
@@ -61,6 +39,50 @@ export function AmountInput({ value, onChange }: { value: string; onChange: (v: 
         placeholder="0.00"
         className="flex-1 px-3 py-2.5 bg-transparent text-[13px] text-gray-900 outline-none placeholder-gray-400"
       />
+    </div>
+  );
+}
+
+// DatePicker — allows any past or future date
+export function DatePicker({ value, onChange, label }: { value: string; onChange: (v: string) => void; label?: string }) {
+  const today = new Date().toISOString().split('T')[0];
+
+  // Quick date shortcuts
+  const shortcuts = [
+    { label: 'Today',      date: today },
+    { label: 'Yesterday',  date: (() => { const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().split('T')[0]; })() },
+    { label: '2 days ago', date: (() => { const d = new Date(); d.setDate(d.getDate()-2); return d.toISOString().split('T')[0]; })() },
+    { label: 'Last week',  date: (() => { const d = new Date(); d.setDate(d.getDate()-7); return d.toISOString().split('T')[0]; })() },
+  ];
+
+  return (
+    <div className="space-y-2">
+      {label && <Label>{label}</Label>}
+      <input
+        type="date"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        max={today}
+        required
+        className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] text-gray-900 outline-none
+          focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-500/10 transition-all"
+      />
+      <div className="flex gap-1.5 flex-wrap">
+        {shortcuts.map(s => (
+          <button
+            key={s.label}
+            type="button"
+            onClick={() => onChange(s.date)}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
+              value === s.date
+                ? 'bg-violet-600 text-white border-violet-600'
+                : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-violet-300 hover:text-violet-600'
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
