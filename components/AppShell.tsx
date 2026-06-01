@@ -43,12 +43,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 function MobileNav() {
   const pathname = usePathname();
   const links = [
-    { href: '/',          icon: '🏠', label: 'Home' },
-    { href: '/expenses',  icon: '💸', label: 'Expenses' },
-    { href: '/income',    icon: '💰', label: 'Income' },
-    { href: '/wallet',    icon: '👛', label: 'Wallet' },
-    { href: '/budget',    icon: '🎯', label: 'Budget' },
-    { href: '/analytics', icon: '📊', label: 'Analytics' },
+    { href: '/',         icon: '🏠', label: 'Home' },
+    { href: '/expenses', icon: '💸', label: 'Expenses' },
+    { href: '/wallet',   icon: '👛', label: 'Wallet' },
+    { href: '/loans',    icon: '🤝', label: 'Loans' },
+    { href: '/budget',   icon: '🎯', label: 'Budget' },
   ];
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-lg z-50 flex items-center justify-around px-1 py-2">

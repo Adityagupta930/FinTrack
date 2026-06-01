@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Wallet, BarChart2, Target,
-  TrendingUp, RefreshCw, Zap, WalletCards, LogOut
+  TrendingUp, RefreshCw, Zap, WalletCards, LogOut, Users
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
@@ -13,6 +13,7 @@ const links = [
   { href: '/expenses',  label: 'Expenses',  icon: Wallet },
   { href: '/income',    label: 'Income',    icon: TrendingUp },
   { href: '/wallet',    label: 'Wallet',    icon: WalletCards },
+  { href: '/loans',     label: 'Loans',     icon: Users },
   { href: '/recurring', label: 'Recurring', icon: RefreshCw },
   { href: '/analytics', label: 'Analytics', icon: BarChart2 },
   { href: '/budget',    label: 'Budget',    icon: Target },
@@ -26,7 +27,6 @@ export default function Sidebar() {
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-60 bg-white border-r border-gray-100 flex flex-col z-40 shadow-sm">
-
       {/* Logo */}
       <div className="px-5 h-16 flex items-center border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center gap-2.5">

@@ -26,6 +26,18 @@ export interface Transfer {
   id: string; from_type: string; to_type: string;
   amount: number; note?: string; created_at?: string;
 }
+export interface Loan {
+  id: string;
+  person_name: string;
+  amount: number;
+  type: 'given' | 'taken'; // given = maine diya, taken = mujhe mila
+  date: string;
+  due_date?: string;
+  note?: string;
+  status: 'pending' | 'settled';
+  payment_mode: 'cash' | 'online';
+  created_at?: string;
+}
 
 async function q<T>(builder: PromiseLike<{ data: T | null; error: { message: string } | null }>): Promise<T> {
   const { data, error } = await builder;
@@ -35,13 +47,13 @@ async function q<T>(builder: PromiseLike<{ data: T | null; error: { message: str
 
 export const api = {
   expenses: {
-    list:   () => q<Expense[]>(supabase.from('expenses').select('*').order('created_at', { ascending: false })),
+    list:   () => q<Expense[]>(supabase.from('expenses').select('*').order('date', { ascending: false }).order('created_at', { ascending: false })),
     create: (d: Omit<Expense, 'id' | 'created_at'>) => q<Expense>(supabase.from('expenses').insert([{ ...d, tags: d.tags ?? [] }]).select().single()),
     update: (id: string, d: Partial<Expense>) => q<Expense>(supabase.from('expenses').update(d).eq('id', id).select().single()),
     delete: async (id: string) => { await supabase.from('expenses').delete().eq('id', id); },
   },
   income: {
-    list:   () => q<Income[]>(supabase.from('income').select('*').order('created_at', { ascending: false })),
+    list:   () => q<Income[]>(supabase.from('income').select('*').order('date', { ascending: false }).order('created_at', { ascending: false })),
     create: (d: Omit<Income, 'id' | 'created_at'>) => q<Income>(supabase.from('income').insert([d]).select().single()),
     update: (id: string, d: Partial<Income>) => q<Income>(supabase.from('income').update(d).eq('id', id).select().single()),
     delete: async (id: string) => { await supabase.from('income').delete().eq('id', id); },
@@ -58,13 +70,20 @@ export const api = {
     delete: async (category: string) => { await supabase.from('budgets').delete().eq('category', category); },
   },
   wallets: {
-    list: () => q<Wallet[]>(supabase.from('wallets').select('*')),
+    list:   () => q<Wallet[]>(supabase.from('wallets').select('*')),
     update: (type: string, balance: number) =>
       q<Wallet>(supabase.from('wallets').update({ balance, updated_at: new Date().toISOString() }).eq('type', type).select().single()),
   },
   transfers: {
-    list: () => q<Transfer[]>(supabase.from('transfers').select('*').order('created_at', { ascending: false })),
+    list:   () => q<Transfer[]>(supabase.from('transfers').select('*').order('created_at', { ascending: false })),
     create: (d: Omit<Transfer, 'id' | 'created_at'>) => q<Transfer>(supabase.from('transfers').insert([d]).select().single()),
+  },
+  loans: {
+    list:   () => q<Loan[]>(supabase.from('loans').select('*').order('created_at', { ascending: false })),
+    create: (d: Omit<Loan, 'id' | 'created_at'>) => q<Loan>(supabase.from('loans').insert([d]).select().single()),
+    update: (id: string, d: Partial<Loan>) => q<Loan>(supabase.from('loans').update(d).eq('id', id).select().single()),
+    delete: async (id: string) => { await supabase.from('loans').delete().eq('id', id); },
+    settle: (id: string) => q<Loan>(supabase.from('loans').update({ status: 'settled' }).eq('id', id).select().single()),
   },
 };
 
