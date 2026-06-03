@@ -65,9 +65,9 @@ export default function RecurringPage() {
       }
     }
 
-    if (newExpenses.length > 0) setExpenses((prev: typeof newExpenses) => [...newExpenses, ...prev]);
+    if (newExpenses.length > 0) setExpenses([...newExpenses, ...expenses]);
     setRecurring(updatedRecurring);
-  }, [setExpenses, setRecurring, adjustWallet]);
+  }, [setExpenses, setRecurring, adjustWallet, expenses]);
 
   useEffect(() => {
     if (recurring.length > 0) processRecurring(recurring);
