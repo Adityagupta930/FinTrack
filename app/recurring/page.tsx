@@ -65,7 +65,7 @@ export default function RecurringPage() {
       }
     }
 
-    if (newExpenses.length > 0) setExpenses(prev => [...newExpenses, ...prev]);
+    if (newExpenses.length > 0) setExpenses((prev: typeof newExpenses) => [...newExpenses, ...prev]);
     setRecurring(updatedRecurring);
   }, [setExpenses, setRecurring, adjustWallet]);
 
