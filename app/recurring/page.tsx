@@ -21,15 +21,15 @@ export default function RecurringPage() {
   const [loading, setLoading]     = useState(false);
 
   // Auto-process recurring on page load
-  const processRecurring = useCallback(async () => {
+  const processRecurring = useCallback(async (currentRecurring: typeof recurring) => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const ym = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
 
-    let updatedExpenses = [...expenses];
-    let updatedRecurring = [...recurring];
+    const newExpenses: typeof expenses = [];
+    let updatedRecurring = [...currentRecurring];
 
-    for (const r of recurring) {
+    for (const r of currentRecurring) {
       const freq = r.frequency || 'monthly';
 
       if (freq === 'daily') {
@@ -40,9 +40,9 @@ export default function RecurringPage() {
             date: todayStr, note: r.note || '🔄 Daily recurring',
             tags: [], payment_mode: r.payment_mode || 'cash',
           });
-          updatedExpenses = [created, ...updatedExpenses];
+          newExpenses.push(created);
           await adjustWallet(r.payment_mode || 'cash', -r.amount);
-          await api.recurring.update(r.id, { ...r, last_added: todayStr });
+          await api.recurring.update(r.id, { last_added: todayStr });
           updatedRecurring = updatedRecurring.map(x => x.id === r.id ? { ...x, last_added: todayStr } : x);
         } catch { /* skip */ }
 
@@ -57,20 +57,20 @@ export default function RecurringPage() {
             date: dateStr, note: r.note || '🔄 Monthly recurring',
             tags: [], payment_mode: r.payment_mode || 'cash',
           });
-          updatedExpenses = [created, ...updatedExpenses];
+          newExpenses.push(created);
           await adjustWallet(r.payment_mode || 'cash', -r.amount);
-          await api.recurring.update(r.id, { ...r, last_added: ym });
+          await api.recurring.update(r.id, { last_added: ym });
           updatedRecurring = updatedRecurring.map(x => x.id === r.id ? { ...x, last_added: ym } : x);
         } catch { /* skip */ }
       }
     }
 
-    setExpenses(updatedExpenses);
+    if (newExpenses.length > 0) setExpenses(prev => [...newExpenses, ...prev]);
     setRecurring(updatedRecurring);
-  }, [recurring, expenses, setExpenses, setRecurring, adjustWallet]);
+  }, [setExpenses, setRecurring, adjustWallet]);
 
   useEffect(() => {
-    if (recurring.length > 0) processRecurring();
+    if (recurring.length > 0) processRecurring(recurring);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recurring.length]);
 
