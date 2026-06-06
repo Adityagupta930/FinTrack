@@ -60,7 +60,7 @@ export default function ExpenseRow({ item, type = 'expense', onEdit, onDelete }:
         <span className={`text-[13px] font-bold tabular-nums ${type === 'income' ? 'text-emerald-600' : 'text-gray-900'}`}>
           {type === 'income' ? '+' : '-'}{fmt(item.amount)}
         </span>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
           {onEdit && (
             <button onClick={onEdit} className="w-6 h-6 rounded-lg bg-gray-100 hover:bg-violet-100 hover:text-violet-600 flex items-center justify-center text-gray-400 transition-colors">
               <Pencil size={11} strokeWidth={2.5} />

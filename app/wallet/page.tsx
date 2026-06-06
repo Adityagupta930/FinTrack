@@ -57,17 +57,17 @@ export default function WalletPage() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-[22px] font-black text-gray-900 tracking-tight">Wallet</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">Manage your cash & online balances.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 ml-auto">
           <button onClick={() => setTransferOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-gray-200">
+            className="flex items-center gap-2 px-3 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-gray-200">
             <ArrowLeftRight size={14} /> Transfer
           </button>
           <button onClick={() => { setAddOpen(true); setAddType('cash'); setAddMode('add'); }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-violet-200">
+            className="flex items-center gap-2 px-3 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-violet-200">
             <Plus size={14} /> Add Money
           </button>
         </div>

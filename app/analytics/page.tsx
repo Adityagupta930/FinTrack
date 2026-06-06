@@ -28,7 +28,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
+      <div className="hidden md:block">
         <h1 className="text-[22px] font-black text-gray-900 tracking-tight">Analytics</h1>
         <p className="text-[13px] text-gray-400 mt-0.5">Deep dive into your spending patterns.</p>
       </div>
@@ -66,7 +66,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Doughnut */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-50">

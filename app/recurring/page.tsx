@@ -66,12 +66,12 @@ export default function RecurringPage() {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-[22px] font-black text-gray-900 tracking-tight">Recurring</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">Daily & monthly auto expenses.</p>
         </div>
         <button onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-violet-200">
+          className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-violet-200 ml-auto">
           <Plus size={15} strokeWidth={2.5} /> Add Recurring
         </button>
       </div>
@@ -244,7 +244,7 @@ function RecurringList({ items, onEdit, onDelete }: {
               <p className="text-[13px] font-bold text-gray-900 tabular-nums">{fmt(r.amount)}</p>
               <p className="text-[10px] text-gray-400">/{(r.frequency || 'monthly') === 'daily' ? 'day' : 'month'}</p>
             </div>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
               <button onClick={() => onEdit(r)}
                 className="w-6 h-6 rounded-lg bg-gray-100 hover:bg-violet-100 hover:text-violet-600 flex items-center justify-center text-gray-400 transition-colors">
                 <Pencil size={11} strokeWidth={2.5} />

@@ -39,48 +39,47 @@ export default function ExpensesPage() {
   function closeModal() { setModalOpen(false); setEditing(null); }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-[22px] font-black text-gray-900 tracking-tight">Expenses</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">Manage and track all your expenses.</p>
         </div>
         <button onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-violet-200">
+          className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-violet-200 ml-auto">
           <Plus size={15} strokeWidth={2.5} /> Add Expense
         </button>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex items-center gap-2 flex-1 min-w-48 bg-gray-50 border border-gray-200 rounded-xl px-3 focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/10 transition-all">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/10 transition-all">
             <Search size={13} className="text-gray-400 flex-shrink-0" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search expenses…"
               className="flex-1 py-2.5 bg-transparent text-[13px] outline-none text-gray-900 placeholder-gray-400" />
           </div>
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal size={13} className="text-gray-400" />
+          <div className="flex gap-2">
             <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
-              className="px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] outline-none text-gray-700 focus:border-violet-500 transition cursor-pointer">
+              className="flex-1 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-[12px] outline-none text-gray-700 focus:border-violet-500 transition cursor-pointer">
               <option value="">All Categories</option>
               {cats.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <select value={monthFilter} onChange={e => setMonthFilter(e.target.value)}
-              className="px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[13px] outline-none text-gray-700 focus:border-violet-500 transition cursor-pointer">
+              className="flex-1 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-[12px] outline-none text-gray-700 focus:border-violet-500 transition cursor-pointer">
               <option value="">All Months</option>
               {months.map(m => {
                 const [y, mo] = m.split('-');
-                return <option key={m} value={m}>{new Date(+y, +mo - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</option>;
+                return <option key={m} value={m}>{new Date(+y, +mo - 1).toLocaleString('default', { month: 'short', year: 'numeric' })}</option>;
               })}
             </select>
+            {(search || catFilter || monthFilter) && (
+              <button onClick={() => { setSearch(''); setCatFilter(''); setMonthFilter(''); }}
+                className="px-3 py-2 rounded-xl bg-red-50 text-red-500 text-[12px] font-medium">Clear</button>
+            )}
           </div>
           {(search || catFilter || monthFilter) && (
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-[12px] text-gray-500">{filtered.length} results · <span className="font-semibold text-gray-900">₹{totalFiltered.toLocaleString('en-IN')}</span></span>
-              <button onClick={() => { setSearch(''); setCatFilter(''); setMonthFilter(''); }}
-                className="text-[12px] text-violet-600 hover:text-violet-700 font-medium">Clear</button>
-            </div>
+            <p className="text-[11px] text-gray-500">{filtered.length} results · <span className="font-semibold text-gray-900">₹{totalFiltered.toLocaleString('en-IN')}</span></p>
           )}
         </div>
       </div>

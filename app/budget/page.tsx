@@ -40,27 +40,27 @@ export default function BudgetPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-[22px] font-black text-gray-900 tracking-tight">Budget</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">Set monthly spending limits per category.</p>
         </div>
         <button onClick={() => setOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-violet-200">
+          className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-violet-200 ml-auto">
           <Plus size={15} strokeWidth={2.5} /> Set Budget
         </button>
       </div>
 
       {/* Summary */}
       {budgets.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           {[
             { label: 'Total Budget', value: fmt(totalBudget), color: 'text-gray-900' },
             { label: 'Total Spent',  value: fmt(totalSpent),  color: 'text-red-500' },
             { label: 'Remaining',    value: fmt(Math.max(totalBudget - totalSpent, 0)), color: 'text-emerald-600' },
           ].map(s => (
-            <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">{s.label}</p>
-              <p className={`text-[20px] font-black tracking-tight ${s.color}`}>{s.value}</p>
+            <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{s.label}</p>
+              <p className={`text-[15px] md:text-[20px] font-black tracking-tight ${s.color}`}>{s.value}</p>
             </div>
           ))}
         </div>
@@ -110,7 +110,7 @@ export default function BudgetPage() {
                       <span className={`text-[12px] font-bold ${pctColor}`}>{pct.toFixed(0)}%</span>
                       {over && <span className="text-[10px] font-bold px-2 py-0.5 bg-red-50 text-red-500 rounded-full">Over budget</span>}
                       <button onClick={() => del(b.category)}
-                        className="w-6 h-6 rounded-lg bg-gray-100 hover:bg-red-100 hover:text-red-500 flex items-center justify-center text-gray-400 transition-colors opacity-0 group-hover:opacity-100">
+                        className="w-6 h-6 rounded-lg bg-gray-100 hover:bg-red-100 hover:text-red-500 flex items-center justify-center text-gray-400 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100">
                         <Trash2 size={11} strokeWidth={2.5} />
                       </button>
                     </div>

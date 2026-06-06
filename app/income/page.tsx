@@ -129,25 +129,25 @@ export default function IncomePage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-[22px] font-black text-gray-900 tracking-tight">Income</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">Track your earnings and income sources.</p>
         </div>
         <button onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-emerald-200">
+          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-[13px] font-semibold transition-all shadow-lg shadow-emerald-200 ml-auto">
           <Plus size={15} strokeWidth={2.5} /> Add Income
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         {[
           { label: 'This Month', value: fmt(monthTotal), color: 'text-emerald-600' },
           { label: 'All Time',   value: fmt(allTotal),   color: 'text-gray-900' },
           { label: 'Entries',    value: String(income.length), color: 'text-gray-900' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">{s.label}</p>
-            <p className={`text-[20px] font-black tracking-tight ${s.color}`}>{s.value}</p>
+          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 md:p-5">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{s.label}</p>
+            <p className={`text-[16px] md:text-[20px] font-black tracking-tight ${s.color}`}>{s.value}</p>
           </div>
         ))}
       </div>

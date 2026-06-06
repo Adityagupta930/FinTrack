@@ -22,14 +22,14 @@ function Card({ label, value, sub, icon: Icon, iconBg, valueColor }: {
   icon: React.ElementType; iconBg: string; valueColor?: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center justify-between shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+    <div className="bg-white rounded-2xl border border-gray-100 p-3 md:p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all duration-200">
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">{label}</p>
-        <p className={`text-[20px] font-black tracking-tight truncate ${valueColor ?? 'text-gray-900'}`}>{value}</p>
-        <p className="text-[11px] text-gray-400 mt-1 truncate">{sub}</p>
+        <p className="text-[10px] md:text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">{label}</p>
+        <p className={`text-[16px] md:text-[20px] font-black tracking-tight truncate ${valueColor ?? 'text-gray-900'}`}>{value}</p>
+        <p className="text-[10px] md:text-[11px] text-gray-400 mt-0.5 truncate">{sub}</p>
       </div>
-      <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ml-4 ${iconBg}`}>
-        <Icon size={20} strokeWidth={2} />
+      <div className={`w-9 h-9 md:w-11 md:h-11 rounded-xl flex items-center justify-center flex-shrink-0 ml-2 ${iconBg}`}>
+        <Icon size={16} strokeWidth={2} />
       </div>
     </div>
   );
@@ -114,8 +114,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header - desktop only */}
+      <div className="hidden md:flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-black text-gray-900 tracking-tight">Dashboard</h1>
           <p className="text-[13px] text-gray-400 mt-0.5">
@@ -127,9 +127,16 @@ export default function DashboardPage() {
           <Plus size={15} strokeWidth={2.5} /> Add Expense
         </button>
       </div>
+      {/* Mobile Add Button */}
+      <div className="md:hidden flex justify-end">
+        <button onClick={() => setModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 active:scale-95 text-white rounded-xl text-[13px] font-semibold shadow-lg shadow-violet-200">
+          <Plus size={15} strokeWidth={2.5} /> Add Expense
+        </button>
+      </div>
 
-      {/* Stat Cards — Row 1 */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Card label="Total Spent"  value={fmt(totalSpent)}  sub="All time"
           icon={IndianRupee} iconBg="bg-violet-50 text-violet-600" />
         <Card label="This Month"   value={fmt(monthSpent)}  sub={new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -149,7 +156,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Wallet + Loans Row */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-2xl p-4 text-white shadow-lg shadow-amber-100">
           <div className="flex items-center gap-2 mb-2">
             <Banknote size={14} />
@@ -183,8 +190,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-5 gap-4">
-        <div className="col-span-3">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="md:col-span-3">
           <Box title="Monthly Spending" badge="Last 6 months">
             <Bar
               data={{ labels: barLabels, datasets: [{ data: barData, backgroundColor: 'rgba(109,99,255,0.85)', hoverBackgroundColor: '#6c63ff', borderRadius: 7, borderSkipped: false }] }}
@@ -198,7 +205,7 @@ export default function DashboardPage() {
             />
           </Box>
         </div>
-        <div className="col-span-2">
+        <div className="md:col-span-2">
           <Box title="By Category">
             {pieLabels.length > 0
               ? <Pie
