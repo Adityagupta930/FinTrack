@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useStore } from '@/lib/store';
 import { api, Recurring, CATEGORY_ICONS, fmt } from '@/lib/api';
 import Modal from '@/components/Modal';
@@ -8,7 +8,7 @@ import { Label, Input, AmountInput, Textarea, FormActions } from '@/components/u
 import { Plus, Pencil, Trash2, RefreshCw, Sun, Calendar, Banknote, Smartphone } from 'lucide-react';
 
 export default function RecurringPage() {
-  const { recurring, setRecurring, expenses, setExpenses, adjustWallet } = useStore();
+  const { recurring, setRecurring } = useStore();
   const [open, setOpen]           = useState(false);
   const [editing, setEditing]     = useState<Recurring | null>(null);
   const [title, setTitle]         = useState('');
@@ -19,60 +19,6 @@ export default function RecurringPage() {
   const [frequency, setFrequency] = useState<'daily' | 'monthly'>('monthly');
   const [payMode, setPayMode]     = useState<'cash' | 'online'>('cash');
   const [loading, setLoading]     = useState(false);
-
-  // Auto-process recurring on page load
-  const processRecurring = useCallback(async (currentRecurring: typeof recurring) => {
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const ym = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
-
-    const newExpenses: typeof expenses = [];
-    let updatedRecurring = [...currentRecurring];
-
-    for (const r of currentRecurring) {
-      const freq = r.frequency || 'monthly';
-
-      if (freq === 'daily') {
-        if (r.last_added === todayStr) continue;
-        try {
-          const created = await api.expenses.create({
-            title: r.title, amount: r.amount, category: r.category,
-            date: todayStr, note: r.note || '🔄 Daily recurring',
-            tags: [], payment_mode: r.payment_mode || 'cash',
-          });
-          newExpenses.push(created);
-          await adjustWallet(r.payment_mode || 'cash', -r.amount);
-          await api.recurring.update(r.id, { last_added: todayStr });
-          updatedRecurring = updatedRecurring.map(x => x.id === r.id ? { ...x, last_added: todayStr } : x);
-        } catch { /* skip */ }
-
-      } else {
-        if (r.last_added?.startsWith(ym)) continue;
-        const maxDay = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
-        const d = Math.min(r.day, maxDay);
-        const dateStr = `${ym}-${String(d).padStart(2,'0')}`;
-        try {
-          const created = await api.expenses.create({
-            title: r.title, amount: r.amount, category: r.category,
-            date: dateStr, note: r.note || '🔄 Monthly recurring',
-            tags: [], payment_mode: r.payment_mode || 'cash',
-          });
-          newExpenses.push(created);
-          await adjustWallet(r.payment_mode || 'cash', -r.amount);
-          await api.recurring.update(r.id, { last_added: ym });
-          updatedRecurring = updatedRecurring.map(x => x.id === r.id ? { ...x, last_added: ym } : x);
-        } catch { /* skip */ }
-      }
-    }
-
-    if (newExpenses.length > 0) setExpenses([...newExpenses, ...expenses]);
-    setRecurring(updatedRecurring);
-  }, [setExpenses, setRecurring, adjustWallet, expenses]);
-
-  useEffect(() => {
-    if (recurring.length > 0) processRecurring(recurring);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recurring.length]);
 
   function openAdd() {
     setEditing(null); setTitle(''); setAmount(''); setDay('1');

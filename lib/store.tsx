@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { api, Expense, Income, Recurring, Budget, Wallet, Transfer, Loan } from '@/lib/api';
 
 interface Store {
@@ -35,6 +35,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [loans,     setLoans]     = useState<Loan[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
+  const processedRef = useRef(false);
 
   const reload = useCallback(async () => {
     setLoading(true); setError(null);
@@ -66,18 +67,81 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Central wallet adjuster — optimistic update + DB sync
   const adjustWallet = useCallback(async (type: 'cash' | 'online', delta: number) => {
-    setWallets(cur => {
-      const wallet = cur.find(w => w.type === type);
-      if (!wallet) return cur;
-      const newBal = Math.round((wallet.balance + delta) * 100) / 100;
-      api.wallets.update(type, newBal).then(updated => {
-        setWallets(latest => latest.map(w => w.type === type ? updated : w));
+    return new Promise<void>(resolve => {
+      setWallets(prev => {
+        const wallet = prev.find(w => w.type === type);
+        if (!wallet) { resolve(); return prev; }
+        const newBal = Math.round((wallet.balance + delta) * 100) / 100;
+        api.wallets.update(type, newBal).then(updated => {
+          setWallets(cur => cur.map(w => w.type === type ? updated : w));
+          resolve();
+        });
+        return prev.map(w => w.type === type ? { ...w, balance: newBal } : w);
       });
-      return cur.map(w => w.type === type ? { ...w, balance: newBal } : w);
     });
   }, []);
 
+  // Process recurring — runs once after initial data load
+  const processRecurring = useCallback(async (recurringList: Recurring[]) => {
+    if (recurringList.length === 0) return;
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const ym = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+    const newExpenses: Expense[] = [];
+
+    for (const r of recurringList) {
+      const freq = r.frequency || 'monthly';
+
+      if (freq === 'daily') {
+        // Already added today?
+        if (r.last_added === todayStr) continue;
+        try {
+          const created = await api.expenses.create({
+            title: r.title, amount: r.amount, category: r.category,
+            date: todayStr, note: r.note || '🔄 Daily recurring',
+            tags: [], payment_mode: r.payment_mode || 'cash',
+          });
+          newExpenses.push(created);
+          await adjustWallet(r.payment_mode || 'cash', -r.amount);
+          await api.recurring.update(r.id, { last_added: todayStr });
+          setRecurring(cur => cur.map(x => x.id === r.id ? { ...x, last_added: todayStr } : x));
+        } catch { /* skip on error */ }
+
+      } else {
+        // Already added this month?
+        if (r.last_added && r.last_added >= ym) continue;
+        const maxDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        const d = Math.min(r.day || 1, maxDay);
+        const dateStr = `${ym}-${String(d).padStart(2, '0')}`;
+        try {
+          const created = await api.expenses.create({
+            title: r.title, amount: r.amount, category: r.category,
+            date: dateStr, note: r.note || '🔄 Monthly recurring',
+            tags: [], payment_mode: r.payment_mode || 'cash',
+          });
+          newExpenses.push(created);
+          await adjustWallet(r.payment_mode || 'cash', -r.amount);
+          await api.recurring.update(r.id, { last_added: ym });
+          setRecurring(cur => cur.map(x => x.id === r.id ? { ...x, last_added: ym } : x));
+        } catch { /* skip on error */ }
+      }
+    }
+
+    if (newExpenses.length > 0) {
+      setExpenses(cur => [...newExpenses, ...cur]);
+    }
+  }, [adjustWallet]);
+
   useEffect(() => { reload(); }, [reload]);
+
+  // After data loads, process recurring once per session
+  useEffect(() => {
+    if (!loading && recurring.length > 0 && !processedRef.current) {
+      processedRef.current = true;
+      processRecurring(recurring);
+    }
+  }, [loading, recurring, processRecurring]);
 
   return (
     <Ctx.Provider value={{
