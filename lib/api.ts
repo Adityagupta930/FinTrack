@@ -101,6 +101,8 @@ export const COLORS = ['#6c63ff','#10b981','#f59e0b','#ec4899','#ef4444','#8b5cf
 export function fmt(n: number | null | undefined) {
   return '₹' + Number(n ?? 0).toLocaleString('en-IN');
 }
-export function getYM(date = new Date()) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+export function getYM(date?: Date) {
+  // Use IST (UTC+5:30) for consistent month calculation
+  const ist = new Date((date ?? new Date()).getTime() + 5.5 * 60 * 60 * 1000);
+  return `${ist.getUTCFullYear()}-${String(ist.getUTCMonth() + 1).padStart(2, '0')}`;
 }

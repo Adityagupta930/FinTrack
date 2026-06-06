@@ -25,6 +25,15 @@ interface Store {
 
 const Ctx = createContext<Store>({} as Store);
 
+// IST date helpers (India UTC+5:30)
+function getTodayIST() {
+  const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+  return ist.toISOString().split('T')[0]; // YYYY-MM-DD
+}
+function getYMIST() {
+  return getTodayIST().slice(0, 7); // YYYY-MM
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [expenses,  setExpenses]  = useState<Expense[]>([]);
   const [income,    setIncome]    = useState<Income[]>([]);
@@ -81,12 +90,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Process recurring — runs once after initial data load
+  // Process recurring — runs once per day after initial data load
   const processRecurring = useCallback(async (recurringList: Recurring[]) => {
     if (recurringList.length === 0) return;
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const ym = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const todayStr = getTodayIST();
+    const ym       = getYMIST();
 
     const newExpenses: Expense[] = [];
 
@@ -94,8 +102,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const freq = r.frequency || 'monthly';
 
       if (freq === 'daily') {
-        // Already added today?
-        if (r.last_added === todayStr) continue;
+        if (r.last_added === todayStr) continue; // already done today
         try {
           const created = await api.expenses.create({
             title: r.title, amount: r.amount, category: r.category,
@@ -106,12 +113,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           await adjustWallet(r.payment_mode || 'cash', -r.amount);
           await api.recurring.update(r.id, { last_added: todayStr });
           setRecurring(cur => cur.map(x => x.id === r.id ? { ...x, last_added: todayStr } : x));
-        } catch { /* skip on error */ }
+        } catch { /* skip */ }
 
       } else {
-        // Already added this month?
-        if (r.last_added && r.last_added >= ym) continue;
-        const maxDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        // monthly: last_added format is YYYY-MM
+        const alreadyDone = r.last_added && r.last_added.slice(0, 7) === ym;
+        if (alreadyDone) continue;
+        const maxDay = new Date(parseInt(ym.slice(0,4)), parseInt(ym.slice(5,7)), 0).getDate();
         const d = Math.min(r.day || 1, maxDay);
         const dateStr = `${ym}-${String(d).padStart(2, '0')}`;
         try {
@@ -124,24 +132,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           await adjustWallet(r.payment_mode || 'cash', -r.amount);
           await api.recurring.update(r.id, { last_added: ym });
           setRecurring(cur => cur.map(x => x.id === r.id ? { ...x, last_added: ym } : x));
-        } catch { /* skip on error */ }
+        } catch { /* skip */ }
       }
     }
 
     if (newExpenses.length > 0) {
       setExpenses(cur => [...newExpenses, ...cur]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adjustWallet]);
 
   useEffect(() => { reload(); }, [reload]);
 
-  // After data loads, process recurring once per session
+  // After data loads, process recurring ONCE per app session
   useEffect(() => {
-    if (!loading && recurring.length > 0 && !processedRef.current) {
+    if (!loading && !processedRef.current) {
       processedRef.current = true;
-      processRecurring(recurring);
+      // read latest recurring directly to avoid stale closure
+      setRecurring(cur => {
+        if (cur.length > 0) processRecurring(cur);
+        return cur;
+      });
     }
-  }, [loading, recurring, processRecurring]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   return (
     <Ctx.Provider value={{
