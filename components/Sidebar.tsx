@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Wallet, BarChart2, Target,
-  TrendingUp, RefreshCw, Zap, WalletCards, LogOut, Users
+  TrendingUp, RefreshCw, Zap, WalletCards, LogOut, Users, FileText
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
@@ -16,6 +16,7 @@ const links = [
   { href: '/loans',     label: 'Loans',     icon: Users },
   { href: '/recurring', label: 'Recurring', icon: RefreshCw },
   { href: '/analytics', label: 'Analytics', icon: BarChart2 },
+  { href: '/reports',   label: 'Reports',   icon: FileText },
   { href: '/budget',    label: 'Budget',    icon: Target },
 ];
 
